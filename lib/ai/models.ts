@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL = "moonshotai/kimi-k2.5";
+export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v3.2";
 
 export const titleModel = {
   id: "moonshotai/kimi-k2.5",
