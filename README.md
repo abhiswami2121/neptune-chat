@@ -1,10 +1,10 @@
-<a href="https://chatbot.ai-sdk.dev/demo">
-  <img alt="Chatbot" src="app/(chat)/opengraph-image.png">
-  <h1 align="center">Chatbot</h1>
+<a href="https://neptune-chat.vercel.app">
+  <img alt="Neptune Chat" src="app/(chat)/opengraph-image.png">
+  <h1 align="center">Neptune Chat</h1>
 </a>
 
 <p align="center">
-    Chatbot (formerly AI Chatbot) is a free, open-source template built with Next.js and the AI SDK that helps you quickly build powerful chatbot applications.
+    <strong>Neptune Chat</strong> — a fork of <a href="https://github.com/vercel/ai-chatbot">Vercel's AI Chatbot template</a>, deployed as part of the Neptune application ecosystem. Beautiful chat interface powered by the Vercel AI Gateway with multi-provider model support (DeepSeek, Kimi, OpenAI, xAI, and more). Built with Next.js and the AI SDK.
 </p>
 
 <p align="center">
