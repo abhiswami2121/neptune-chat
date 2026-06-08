@@ -36,8 +36,8 @@ importers:
         specifier: ^6.35.3
         version: 6.36.4
       '@neptune/core':
-        specifier: file:/home/neptune/neptune-core/neptune-core-1.0.0.tgz
-        version: file:../neptune-core/neptune-core-1.0.0.tgz
+        specifier: file:./vendor/neptune-core-0.1.0.tgz
+        version: file:vendor/neptune-core-0.1.0.tgz
       '@opentelemetry/api':
         specifier: ^1.9.0
         version: 1.9.0
@@ -1152,8 +1152,8 @@ packages:
   '@neondatabase/serverless@0.9.5':
     resolution: {integrity: sha512-siFas6gItqv6wD/pZnvdu34wEqgG3nSE6zWZdq5j2DEsa+VvX8i/5HXJOo06qrw5axPXn+lGCxeR+NLaSPIXug==}
 
-  '@neptune/core@file:../neptune-core/neptune-core-1.0.0.tgz':
-    resolution: {integrity: sha512-7nJp+/b0fyWnD/hmVsjBqp8ABhVLZ0AX6AyUA/Nw3SCJMvebI4SJncYJA0Q4jqawNKmq9AqWpaLTr1L3ZhixyA==, tarball: file:../neptune-core/neptune-core-1.0.0.tgz}
+  '@neptune/core@file:vendor/neptune-core-0.1.0.tgz':
+    resolution: {integrity: sha512-7nJp+/b0fyWnD/hmVsjBqp8ABhVLZ0AX6AyUA/Nw3SCJMvebI4SJncYJA0Q4jqawNKmq9AqWpaLTr1L3ZhixyA==, tarball: file:vendor/neptune-core-0.1.0.tgz}
     version: 1.0.0
 
   '@next/env@16.2.0':
@@ -4883,7 +4883,7 @@ snapshots:
       '@types/pg': 8.11.6
     optional: true
 
-  '@neptune/core@file:../neptune-core/neptune-core-1.0.0.tgz':
+  '@neptune/core@file:vendor/neptune-core-0.1.0.tgz':
     dependencies:
       zod: 3.25.76
 
