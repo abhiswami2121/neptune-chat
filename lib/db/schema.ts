@@ -134,3 +134,21 @@ export const stream = pgTable(
 );
 
 export type Stream = InferSelectModel<typeof stream>;
+
+export const sandboxRun = pgTable("SandboxRun", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  sandboxId: text("sandboxId").notNull(),
+  userId: uuid("userId")
+    .notNull()
+    .references(() => user.id),
+  toolName: text("toolName").notNull(),
+  runtime: text("runtime").notNull().default("node24"),
+  status: text("status").notNull().default("created"),
+  stdout: text("stdout"),
+  stderr: text("stderr"),
+  durationMs: text("durationMs"),
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  destroyedAt: timestamp("destroyedAt"),
+});
+
+export type SandboxRun = InferSelectModel<typeof sandboxRun>;

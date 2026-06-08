@@ -42,6 +42,7 @@ import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
 import { getMCPToolNames, getMCPTools } from "@/lib/mcp/client";
 import { checkIpRateLimit } from "@/lib/ratelimit";
+import { sandboxTools } from "@/lib/sandbox/tools";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
 import { generateTitleFromUserMessage } from "../../actions";
@@ -229,6 +230,12 @@ export async function POST(request: Request) {
                   "postV2Session",
                   "streamV2Progress",
                   "controlV2Session",
+                  "runScript",
+                  "scrapeURL",
+                  "processData",
+                  "runWorkflow",
+                  "spawnPersistentSession",
+                  "spawnCodingAgent",
                   ...mcpToolNames,
                 ] as any),
           providerOptions: {
@@ -259,6 +266,8 @@ export async function POST(request: Request) {
             }),
             // --- Inline tools (PRD Section 3, Layer 2) ---
             ...getAvailableTools(),
+            // --- Sandbox tools (PRD Section 3, Layer 2b) ---
+            ...sandboxTools,
             // --- MCP tools (PRD Section 3, Layer 3) ---
             ...mcpTools,
           },
