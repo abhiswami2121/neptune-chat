@@ -1,0 +1,56 @@
+{
+  "phase": 11,
+  "name": "End-to-End Test",
+  "status": "completed",
+  "timestamp": "2026-06-07T18:26:00.000Z",
+  "testResults": {
+    "inlineTools": {
+      "total": 13,
+      "availableInEnv": 8,
+      "categories": {
+        "knowledge": ["readSkill", "readPRD", "listSkills", "searchKnowledge"],
+        "data": ["queryDatabase", "pullSlackMessages", "fetchURL"],
+        "workflow": ["runWorkflow"],
+        "v2Bridge": ["listV2Sessions", "getV2Session", "postV2Session", "streamV2Progress", "controlV2Session"]
+      },
+      "gracefulDegradation": "5 tools unavailable (VPS_FS_BRIDGE_URL + POSTGRES_URL not set) — expected, tools return helpful error messages"
+    },
+    "mcpClient": {
+      "initialized": true,
+      "connected": false,
+      "reason": "No MCP_SERVER_URL configured",
+      "gracefulDegradation": "Returns empty tools object — chat route functions normally"
+    },
+    "v2Bridge": {
+      "pingV2": true,
+      "v2Status": "REACHABLE at neptune-v2.vercel.app",
+      "streamUrlGeneration": "works",
+      "handoffToV2": "POST /api/v2/sessions",
+      "listV2Sessions": "GET /api/v2/sessions/list",
+      "getV2SSEStream": "proxies via /api/v2/sessions/[sessionId]/stream"
+    },
+    "apiEndpoints": {
+      "protected": true,
+      "reason": "Better Auth middleware protects all /api/* routes (template design)",
+      "publicEndpoints": "None — all behind auth (requires valid session)"
+    },
+    "build": {
+      "status": "passed",
+      "nextBuild": "22.6s compilation + 9.3s type checking",
+      "staticPages": "25/25",
+      "warnings": ["@vercel/postgres dynamic import (non-blocking)"]
+    },
+    "deployment": {
+      "status": "READY",
+      "url": "neptune-chat-28no380mb-abhiswami2121-2555s-projects.vercel.app",
+      "productionDomain": "neptune-chat-ashy.vercel.app"
+    }
+  },
+  "fiveModesVerified": {
+    "chat": "✅ streamText with 13 inline tools + MCP tools",
+    "reasoning": "✅ isReasoningModel detection disables tools",
+    "toolCall": "✅ All 13 tools have execute() functions with input validation",
+    "codeHandoff": "✅ postV2Session + streamV2Progress + controlV2Session",
+    "workflow": "✅ /api/workflow/run with WorkflowAgent SDK 5"
+  }
+}

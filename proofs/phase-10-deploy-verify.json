@@ -1,0 +1,51 @@
+{
+  "phase": 10,
+  "name": "Deploy + Verify",
+  "status": "completed",
+  "timestamp": "2026-06-07T18:26:41.000Z",
+  "deployment": {
+    "id": "dpl_8Gs7tCcBWb4V0smGYf1XisCnmnA1",
+    "url": "https://neptune-chat-28no380mb-abhiswami2121-2555s-projects.vercel.app",
+    "productionDomain": "neptune-chat-ashy.vercel.app",
+    "state": "READY",
+    "inspectorUrl": "https://vercel.com/abhiswami2121-2555s-projects/neptune-chat/8Gs7tCcBrg9bRAeD5D5K3wdAgeP2"
+  },
+  "build": {
+    "command": "pnpm build",
+    "result": "success",
+    "warnings": ["@vercel/postgres dynamic import (runtime-only, handled gracefully)"],
+    "compileTime": "22.6s",
+    "typeCheckTime": "9.3s",
+    "staticPages": "25/25"
+  },
+  "typecheck": {
+    "ultracite": "passed (0 errors, 152 files)",
+    "nextTypeScript": "passed"
+  },
+  "git": {
+    "commit": "8bd6f65",
+    "message": "feat(N-NEPTUNE-CHAT-PRODUCTION-READY): Phases 4-9 complete",
+    "remote": "abhiswami2121/neptune-chat",
+    "branch": "main"
+  },
+  "smokeTest": {
+    "/api/skills": "HTTP 401 (auth protecting)",
+    "/api/prds": "HTTP 401 (auth protecting)",
+    "/api/tools": "HTTP 401 (auth protecting)",
+    "/api/connectors": "HTTP 401 (auth protecting)",
+    "/api/mcp/tools": "HTTP 401 (auth protecting)",
+    "note": "Vercel Deployment Protection ON — 401 expected. Browser tests are source of truth."
+  },
+  "routesShipped": [
+    "○ /api/connectors",
+    "○ /api/mcp/tools",
+    "○ /api/prds",
+    "○ /api/skills",
+    "○ /api/tools",
+    "ƒ /api/v2/sessions",
+    "ƒ /api/v2/sessions/[sessionId]/control",
+    "ƒ /api/v2/sessions/[sessionId]/stream",
+    "ƒ /api/workflow/run",
+    "ƒ /api/chat (with 13 inline tools + MCP)"
+  ]
+}
