@@ -1,0 +1,34 @@
+{
+  "phase": 8,
+  "name": "MCP Integration (experimental_createMCPClient)",
+  "status": "completed",
+  "timestamp": "2026-06-07T00:00:00.000Z",
+  "package_installed": "@ai-sdk/mcp@1.0.46",
+  "files_created": ["lib/mcp/client.ts", "app/api/mcp/tools/route.ts"],
+  "files_modified": ["app/(chat)/api/chat/route.ts"],
+  "architecture": {
+    "client_manager": "lib/mcp/client.ts — MCPClient singleton with graceful degradation",
+    "api_endpoint": "GET /api/mcp/tools — lists tools from connected MCP servers",
+    "chat_integration": "MCP tools pre-fetched before streamText, merged into tools + activeTools"
+  },
+  "api_surface": {
+    "getMCPTools": "Returns AI SDK compatible tool objects (empty if no MCP_SERVER_URL)",
+    "getMCPToolNames": "Returns string[] for experimental_activeTools",
+    "getMCPServerInfo": "Returns {connected, serverName, tools[]} for UI",
+    "isMCPAvailable": "Boolean check for MCP_SERVER_URL + connectivity",
+    "resetMCPClient": "Clears cached client (for runtime env changes)"
+  },
+  "transport": "HTTP (supports SSE and Stdio via @ai-sdk/mcp/mcp-stdio)",
+  "graceful_degradation": "Returns empty tools when MCP_SERVER_URL not set or connection fails",
+  "chat_route_changes": [
+    "Import: getMCPToolNames, getMCPTools from @/lib/mcp/client",
+    "Pre-fetch: await Promise.all([getMCPToolNames(), getMCPTools()]) before stream",
+    "Active tools: ...mcpToolNames spread into experimental_activeTools array",
+    "Tools object: ...mcpTools spread into tools alongside inline tools"
+  ],
+  "lint_errors_fixed": [
+    "noUnusedVariables: error → _error in getMCPServerInfo catch block",
+    "organizeImports: auto-fixed import ordering via pnpm fix"
+  ],
+  "typecheck": "passed (0 errors, 146 files)"
+}

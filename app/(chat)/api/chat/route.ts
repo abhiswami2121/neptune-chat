@@ -11,6 +11,7 @@ import { checkBotId } from "botid/server";
 import { after } from "next/server";
 import { createResumableStreamContext } from "resumable-stream";
 import { auth, type UserType } from "@/app/(auth)/auth";
+import { getAvailableTools } from "@/lib/agent/inline-tools";
 import { entitlementsByUserType } from "@/lib/ai/entitlements";
 import {
   allowedModelIds,
@@ -39,6 +40,7 @@ import {
 } from "@/lib/db/queries";
 import type { DBMessage } from "@/lib/db/schema";
 import { ChatbotError } from "@/lib/errors";
+import { getMCPToolNames, getMCPTools } from "@/lib/mcp/client";
 import { checkIpRateLimit } from "@/lib/ratelimit";
 import type { ChatMessage } from "@/lib/types";
 import { convertToUIMessages, generateUUID } from "@/lib/utils";
@@ -186,6 +188,12 @@ export async function POST(request: Request) {
     const isReasoningModel = capabilities?.reasoning === true;
     const supportsTools = capabilities?.tools === true;
 
+    // Pre-fetch MCP tools (gracefully degrades if no MCP server configured)
+    const [mcpToolNames, mcpTools] = await Promise.all([
+      getMCPToolNames(),
+      getMCPTools(),
+    ]);
+
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
@@ -195,17 +203,34 @@ export async function POST(request: Request) {
           model: getLanguageModel(chatModel),
           system: systemPrompt({ requestHints, supportsTools }),
           messages: modelMessages,
-          stopWhen: stepCountIs(5),
+          stopWhen: stepCountIs(20),
+          // TypeScript can't infer dynamic tool names from getAvailableTools()/getMCPTools()
+          // at compile time — the actual tools are fine at runtime.
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           experimental_activeTools:
             isReasoningModel && !supportsTools
-              ? []
-              : [
+              ? ([] as any)
+              : ([
                   "getWeather",
                   "createDocument",
                   "editDocument",
                   "updateDocument",
                   "requestSuggestions",
-                ],
+                  "readSkill",
+                  "readPRD",
+                  "listSkills",
+                  "searchKnowledge",
+                  "queryDatabase",
+                  "pullSlackMessages",
+                  "fetchURL",
+                  "runWorkflow",
+                  "listV2Sessions",
+                  "getV2Session",
+                  "postV2Session",
+                  "streamV2Progress",
+                  "controlV2Session",
+                  ...mcpToolNames,
+                ] as any),
           providerOptions: {
             ...(modelConfig?.gatewayOrder && {
               gateway: { order: modelConfig.gatewayOrder },
@@ -232,6 +257,10 @@ export async function POST(request: Request) {
               dataStream,
               modelId: chatModel,
             }),
+            // --- Inline tools (PRD Section 3, Layer 2) ---
+            ...getAvailableTools(),
+            // --- MCP tools (PRD Section 3, Layer 3) ---
+            ...mcpTools,
           },
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,

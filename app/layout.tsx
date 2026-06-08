@@ -9,7 +9,8 @@ import { SessionProvider } from "next-auth/react";
 export const metadata: Metadata = {
   metadataBase: new URL("https://neptune-chat.vercel.app"),
   title: "Neptune Chat",
-  description: "Neptune Chat — a Vercel AI Chatbot powered by the Vercel AI Gateway with multi-provider model support.",
+  description:
+    "Neptune Chat — a Vercel AI Chatbot powered by the Vercel AI Gateway with multi-provider model support.",
 };
 
 export const viewport = {

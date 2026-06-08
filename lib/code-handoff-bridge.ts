@@ -13,8 +13,8 @@
  */
 
 const V2_CHAT_ENDPOINT =
-  process.env.NEPTUNE_V2_CHAT_URL || 'https://neptune-v2.vercel.app/api/chat';
-const V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || '';
+  process.env.NEPTUNE_V2_CHAT_URL || "https://neptune-v2.vercel.app/api/chat";
+const V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
 
 export interface HandoffRequest {
   prompt: string;
@@ -43,11 +43,11 @@ export async function handoffToNeptuneCode(
   request: HandoffRequest
 ): Promise<HandoffResponse> {
   const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
+    "Content-Type": "application/json",
   };
 
   if (V2_HANDOFF_SECRET) {
-    headers['Authorization'] = `Bearer ${V2_HANDOFF_SECRET}`;
+    headers.Authorization = `Bearer ${V2_HANDOFF_SECRET}`;
   }
 
   try {
@@ -55,19 +55,19 @@ export async function handoffToNeptuneCode(
     const timeout = setTimeout(() => controller.abort(), 10_000);
 
     const res = await fetch(V2_CHAT_ENDPOINT, {
-      method: 'POST',
+      method: "POST",
       headers,
       body: JSON.stringify({
         messages: [
           {
-            role: 'user',
+            role: "user",
             content: request.prompt,
           },
         ],
         chatId: request.chatId ?? `handoff-${Date.now()}`,
-        userId: request.userId ?? 'neptune-chat',
-        modelId: request.modelId ?? 'deepseek-v4-pro',
-        source: 'neptune-chat',
+        userId: request.userId ?? "neptune-chat",
+        modelId: request.modelId ?? "deepseek-v4-pro",
+        source: "neptune-chat",
         context: request.context,
       }),
       signal: controller.signal,
@@ -76,10 +76,10 @@ export async function handoffToNeptuneCode(
     clearTimeout(timeout);
 
     if (!res.ok) {
-      const body = await res.text().catch(() => '');
+      const body = await res.text().catch(() => "");
       return {
         success: false,
-        error: `V2 returned ${res.status}: ${body.substring(0, 200)}`,
+        error: `V2 returned ${res.status}: ${body.slice(0, 200)}`,
         degraded: true,
       };
     }
@@ -88,12 +88,14 @@ export async function handoffToNeptuneCode(
     return {
       success: true,
       sessionId: data.sessionId ?? data.id,
-      sessionUrl: data.sessionUrl ?? `https://neptune-v2.vercel.app/sessions/${data.sessionId ?? data.id}`,
+      sessionUrl:
+        data.sessionUrl ??
+        `https://neptune-v2.vercel.app/sessions/${data.sessionId ?? data.id}`,
       sseUrl: data.sseUrl,
       degraded: false,
     };
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Unknown error';
+    const message = err instanceof Error ? err.message : "Unknown error";
     return {
       success: false,
       error: `V2 unreachable: ${message}`,
@@ -107,7 +109,7 @@ export async function handoffToNeptuneCode(
  * Chat UI can open an EventSource to this URL for live progress.
  */
 export function getV2ProgressStreamUrl(sessionId: string): string {
-  const base = V2_CHAT_ENDPOINT.replace('/api/chat', '');
+  const base = V2_CHAT_ENDPOINT.replace("/api/chat", "");
   return `${base}/api/sessions/${sessionId}/stream`;
 }
 
@@ -117,10 +119,10 @@ export function getV2ProgressStreamUrl(sessionId: string): string {
 export async function checkV2Health(): Promise<boolean> {
   try {
     const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 5_000);
+    const timeout = setTimeout(() => controller.abort(), 5000);
 
     const res = await fetch(
-      V2_CHAT_ENDPOINT.replace('/api/chat', '/api/health'),
+      V2_CHAT_ENDPOINT.replace("/api/chat", "/api/health"),
       { signal: controller.signal }
     );
 

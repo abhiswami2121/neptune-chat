@@ -12,11 +12,16 @@
  * Designed to be imported in the chat route for model selection decisions.
  */
 
-export type IntentMode = 'chat' | 'reasoning' | 'tool_call' | 'code_handoff' | 'workflow';
+export type IntentMode =
+  | "chat"
+  | "reasoning"
+  | "tool_call"
+  | "code_handoff"
+  | "workflow";
 
 export interface IntentClassification {
   mode: IntentMode;
-  confidence: 'high' | 'medium' | 'low';
+  confidence: "high" | "medium" | "low";
   matchedPatterns: string[];
 }
 
@@ -24,11 +29,15 @@ export interface IntentClassification {
 // Ordered from most specific → least specific.
 // First match wins (higher confidence).
 
-const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; patterns: RegExp[] }> = [
+const INTENT_PATTERNS: Array<{
+  mode: IntentMode;
+  confidence: "high" | "medium";
+  patterns: RegExp[];
+}> = [
   // ── CODE HANDOFF (build, refactor, fix, add feature) ────────────────
   {
-    mode: 'code_handoff',
-    confidence: 'high',
+    mode: "code_handoff",
+    confidence: "high",
     patterns: [
       /\b(build|create|make|generate|write)\s+(me\s+)?(a|an|the)\s+(app|application|component|page|site|website|feature|function|api|endpoint|route|landing\s*page|dashboard|form|widget)\b/i,
       /\b(refactor|rewrite|restructure|clean\s*up|organize)\s+(the|this|my|our)\s+(code|component|file|function|module|app|middleware|hook|route|endpoint|service|class|type|interface)\b/i,
@@ -37,8 +46,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
     ],
   },
   {
-    mode: 'code_handoff',
-    confidence: 'medium',
+    mode: "code_handoff",
+    confidence: "medium",
     patterns: [
       // Broad code-action pattern (catches "refactor the auth middleware" etc.)
       /\b(refactor|rewrite|restructure|add|implement)\s+(the|this|my|our|a|an)\s+\w+/i,
@@ -51,8 +60,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
 
   // ── WORKFLOW (every, for each, pipeline, batch) ─────────────────────
   {
-    mode: 'workflow',
-    confidence: 'high',
+    mode: "workflow",
+    confidence: "high",
     patterns: [
       /\b(every|each|all)\s+(customer|user|file|record|item|entry|client)\b/i,
       /\b(for\s+each|iterate|loop\s+through|process\s+all)\b/i,
@@ -63,8 +72,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
 
   // ── TOOL CALL (find, search, show me, data retrieval) ───────────────
   {
-    mode: 'tool_call',
-    confidence: 'high',
+    mode: "tool_call",
+    confidence: "high",
     patterns: [
       /\b(find|search|look\s*(up|for)|grep|locate)\s+(the|a|all|my|for)\b/i,
       /\b(show|display|fetch|pull|get|retrieve)\s+(me\s+)?(the|a|all|my)\s+(data|info|file|record|log|customer|transaction)\b/i,
@@ -73,8 +82,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
     ],
   },
   {
-    mode: 'tool_call',
-    confidence: 'medium',
+    mode: "tool_call",
+    confidence: "medium",
     patterns: [
       /\b(list|enumerate|catalog|audit)\s+(all|the|my|our)\b/i,
       /\b(what'?s|what\s+is)\s+(the|my|our)\s+(status|state|balance|count|total)\b/i,
@@ -84,8 +93,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
 
   // ── REASONING (analyze, why, compare, complex thinking) ─────────────
   {
-    mode: 'reasoning',
-    confidence: 'high',
+    mode: "reasoning",
+    confidence: "high",
     patterns: [
       /\b(analy[sz]e|diagnose|investigate|troubleshoot|audit)\s+(the|this|why|how)\b/i,
       /\b(compare|contrast|diff|versus|vs\.?)\s+(the|this|a|an)\b/i,
@@ -95,8 +104,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
     ],
   },
   {
-    mode: 'reasoning',
-    confidence: 'medium',
+    mode: "reasoning",
+    confidence: "medium",
     patterns: [
       /\b(why|how\s+(does|do|is|are|can|should|would))\b/i,
       /\b(is\s+it\s+(safe|possible|a\s+good\s+idea|worth))\b/i,
@@ -107,8 +116,8 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
 
   // ── CHAT (greetings, conversation, fallback) ────────────────────────
   {
-    mode: 'chat',
-    confidence: 'high',
+    mode: "chat",
+    confidence: "high",
     patterns: [
       /\b(hi|hey|hello|yo|sup|good\s+(morning|afternoon|evening))\b/i,
       /\b(thanks|thank\s+you|appreciate|got\s+it|ok|okay|cool)\b/i,
@@ -121,7 +130,11 @@ const INTENT_PATTERNS: Array<{ mode: IntentMode; confidence: 'high' | 'medium'; 
 
 export function classifyIntent(text: string): IntentClassification {
   if (!text || text.trim().length === 0) {
-    return { mode: 'chat', confidence: 'high', matchedPatterns: ['empty_input'] };
+    return {
+      mode: "chat",
+      confidence: "high",
+      matchedPatterns: ["empty_input"],
+    };
   }
 
   const matchedPatterns: string[] = [];
@@ -129,7 +142,7 @@ export function classifyIntent(text: string): IntentClassification {
   for (const group of INTENT_PATTERNS) {
     for (const pattern of group.patterns) {
       if (pattern.test(text)) {
-        matchedPatterns.push(pattern.source.substring(0, 60));
+        matchedPatterns.push(pattern.source.slice(0, 60));
       }
     }
     if (matchedPatterns.length > 0) {
@@ -142,43 +155,48 @@ export function classifyIntent(text: string): IntentClassification {
   }
 
   // Default: chat with low confidence (no patterns matched)
-  return { mode: 'chat', confidence: 'low', matchedPatterns: [] };
+  return { mode: "chat", confidence: "low", matchedPatterns: [] };
 }
 
 // ── MODEL SELECTION BY INTENT ──────────────────────────────────────────
 
 /** Maps an intent mode to the recommended model ID. */
 export const INTENT_MODEL_MAP: Record<IntentMode, string> = {
-  chat: 'deepseek-v4-pro',
-  reasoning: 'deepseek-reasoner',
-  tool_call: 'deepseek/deepseek-v3.2',
-  code_handoff: 'anthropic/claude-sonnet-4-6',
-  workflow: 'deepseek/deepseek-v3.2',
+  chat: "deepseek-v4-pro",
+  reasoning: "deepseek-reasoner",
+  tool_call: "deepseek/deepseek-v3.2",
+  code_handoff: "anthropic/claude-sonnet-4-6",
+  workflow: "deepseek/deepseek-v3.2",
 };
 
 /** Human-readable labels for display in the UI. */
 export const INTENT_LABELS: Record<IntentMode, string> = {
-  chat: 'Chat',
-  reasoning: 'Deep Reasoning',
-  tool_call: 'Tool Discovery',
-  code_handoff: 'Code Handoff',
-  workflow: 'Workflow',
+  chat: "Chat",
+  reasoning: "Deep Reasoning",
+  tool_call: "Tool Discovery",
+  code_handoff: "Code Handoff",
+  workflow: "Workflow",
 };
 
 /** Descriptions for tooltips / agent info. */
 export const INTENT_DESCRIPTIONS: Record<IntentMode, string> = {
-  chat: 'Fast, conversational responses for greetings, Q&A, and general chat.',
-  reasoning: 'Deep analysis with step-by-step thinking for complex questions.',
-  tool_call: 'Searches data, reads files, and discovers information using available tools.',
-  code_handoff: 'Hands off to Neptune Code for building, refactoring, and long coding sessions.',
-  workflow: 'Orchestrates multi-step batch operations across many records.',
+  chat: "Fast, conversational responses for greetings, Q&A, and general chat.",
+  reasoning: "Deep analysis with step-by-step thinking for complex questions.",
+  tool_call:
+    "Searches data, reads files, and discovers information using available tools.",
+  code_handoff:
+    "Hands off to Neptune Code for building, refactoring, and long coding sessions.",
+  workflow: "Orchestrates multi-step batch operations across many records.",
 };
 
 /**
  * Returns the recommended model for a given user message.
  * Use this in the chat route to auto-select models based on intent.
  */
-export function getRecommendedModel(text: string, currentModel: string): {
+export function getRecommendedModel(
+  text: string,
+  currentModel: string
+): {
   model: string;
   intent: IntentClassification;
   changed: boolean;
@@ -194,7 +212,7 @@ export function getRecommendedModel(text: string, currentModel: string): {
   const recommended = INTENT_MODEL_MAP[intent.mode];
 
   // Only auto-switch on high-confidence non-chat intents
-  if (intent.confidence === 'high' && intent.mode !== 'chat') {
+  if (intent.confidence === "high" && intent.mode !== "chat") {
     return { model: recommended, intent, changed: true };
   }
 
@@ -202,4 +220,4 @@ export function getRecommendedModel(text: string, currentModel: string): {
 }
 
 // Re-export for convenience (avoids circular dep)
-const DEFAULT_CHAT_MODEL_DETECT = 'deepseek-v4-pro';
+const DEFAULT_CHAT_MODEL_DETECT = "deepseek-v4-pro";

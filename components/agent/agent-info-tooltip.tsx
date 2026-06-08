@@ -6,26 +6,31 @@
  *
  * PRD ref: Mission 14, Section 4 — AgentInfo tooltips in both surfaces.
  */
-'use client';
+"use client";
 
-import React from 'react';
+import type { ChatModel } from "@/lib/ai/models";
 import {
-  INTENT_LABELS,
   INTENT_DESCRIPTIONS,
+  INTENT_LABELS,
   type IntentMode,
-} from '@/lib/intent-classifier';
-import type { ChatModel } from '@/lib/ai/models';
+} from "@/lib/intent-classifier";
 
 // ── Mode Icons ────────────────────────────────────────────────────────
 const MODE_ICONS: Record<IntentMode, string> = {
-  chat: '💬',
-  reasoning: '🧠',
-  tool_call: '🔍',
-  code_handoff: '🔧',
-  workflow: '🔄',
+  chat: "💬",
+  reasoning: "🧠",
+  tool_call: "🔍",
+  code_handoff: "🔧",
+  workflow: "🔄",
 };
 
-const MODE_ORDER: IntentMode[] = ['chat', 'reasoning', 'tool_call', 'code_handoff', 'workflow'];
+const MODE_ORDER: IntentMode[] = [
+  "chat",
+  "reasoning",
+  "tool_call",
+  "code_handoff",
+  "workflow",
+];
 
 // ── Component Props ───────────────────────────────────────────────────
 
@@ -49,8 +54,8 @@ function ModeRow({ mode, isActive }: { mode: IntentMode; isActive?: boolean }) {
     <div
       className={`flex items-center gap-2 px-2 py-1 rounded text-sm ${
         isActive
-          ? 'bg-cyan-50 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-medium'
-          : 'text-zinc-600 dark:text-zinc-400'
+          ? "bg-cyan-50 dark:bg-cyan-950 text-cyan-700 dark:text-cyan-300 font-medium"
+          : "text-zinc-600 dark:text-zinc-400"
       }`}
       title={INTENT_DESCRIPTIONS[mode]}
     >
@@ -75,7 +80,7 @@ export function AgentInfoTooltip({
   intentMode,
   availableTools,
   compact = false,
-  className = '',
+  className = "",
 }: AgentInfoTooltipProps) {
   if (compact) {
     return (
@@ -83,7 +88,7 @@ export function AgentInfoTooltip({
         {currentModel && (
           <div className="text-xs text-zinc-500 dark:text-zinc-400">
             {currentModel.provider}/{currentModel.name}
-            {currentModel.routeType === 'direct' && (
+            {currentModel.routeType === "direct" && (
               <span className="ml-1 text-[10px] bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-300 px-1 rounded">
                 direct
               </span>
@@ -111,7 +116,7 @@ export function AgentInfoTooltip({
           {currentModel && (
             <p className="text-xs text-zinc-500 dark:text-zinc-400">
               {currentModel.name} · {currentModel.provider}
-              {currentModel.routeType === 'direct' && ' · direct key'}
+              {currentModel.routeType === "direct" && " · direct key"}
             </p>
           )}
         </div>
@@ -124,11 +129,7 @@ export function AgentInfoTooltip({
         </h5>
         <div className="space-y-0.5">
           {MODE_ORDER.map((mode) => (
-            <ModeRow
-              key={mode}
-              mode={mode}
-              isActive={intentMode === mode}
-            />
+            <ModeRow isActive={intentMode === mode} key={mode} mode={mode} />
           ))}
         </div>
       </div>
@@ -156,11 +157,12 @@ export function AgentInfoTooltip({
           <p className="text-xs text-zinc-600 dark:text-zinc-300">
             {currentModel.description || currentModel.name}
           </p>
-          {currentModel.gatewayOrder && currentModel.gatewayOrder.length > 0 && (
-            <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
-              Gateway fallback: {currentModel.gatewayOrder.join(' → ')}
-            </p>
-          )}
+          {currentModel.gatewayOrder &&
+            currentModel.gatewayOrder.length > 0 && (
+              <p className="text-[10px] text-zinc-400 dark:text-zinc-500 mt-0.5">
+                Gateway fallback: {currentModel.gatewayOrder.join(" → ")}
+              </p>
+            )}
         </div>
       )}
     </div>
@@ -180,11 +182,11 @@ export function useAgentInfoDisplay(props: {
     currentModel: props.model,
     intentMode: props.intentMode,
     availableTools: props.tools ?? [
-      'getWeather',
-      'createDocument',
-      'editDocument',
-      'updateDocument',
-      'requestSuggestions',
+      "getWeather",
+      "createDocument",
+      "editDocument",
+      "updateDocument",
+      "requestSuggestions",
     ],
   };
 }

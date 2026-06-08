@@ -18,9 +18,11 @@
     "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
   },
   "dependencies": {
+    "@ai-sdk/mcp": "^1.0.46",
     "@ai-sdk/openai-compatible": "^2.0.48",
     "@ai-sdk/provider": "^3.0.3",
     "@ai-sdk/react": "3.0.118",
+    "@ai-sdk/workflow": "0.0.0-bf6e4b15-20260402200305",
     "@codemirror/lang-python": "^6.1.6",
     "@codemirror/state": "^6.5.0",
     "@codemirror/theme-one-dark": "^6.1.2",
@@ -72,6 +74,7 @@
     "react": "19.0.1",
     "react-data-grid": "7.0.0-beta.47",
     "react-dom": "19.0.1",
+    "react-jsx-parser": "^2.4.1",
     "redis": "^5.0.0",
     "resumable-stream": "^2.2.10",
     "server-only": "^0.0.1",

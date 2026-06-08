@@ -1,0 +1,35 @@
+{
+  "phase": 7,
+  "name": "Connectors Panel & API",
+  "status": "completed",
+  "timestamp": "2026-06-07T00:00:00.000Z",
+  "files_created": [
+    "app/api/connectors/route.ts",
+    "components/sidebar/connectors-panel.tsx"
+  ],
+  "files_modified": [],
+  "connectors": [
+    { "id": "github", "status": "env-var-driven" },
+    { "id": "slack", "status": "env-var-driven" },
+    { "id": "postgres", "status": "env-var-driven" },
+    { "id": "redis", "status": "env-var-driven" },
+    { "id": "vercel_blob", "status": "env-var-driven" },
+    { "id": "vps_bridge", "status": "env-var-driven" },
+    { "id": "neptune_v2", "status": "configured (always)" },
+    { "id": "mcp", "status": "env-var-driven" }
+  ],
+  "features": [
+    "GET /api/connectors returns 8 connectors with env-var-derived status",
+    "ConnectorsPanel component with SVG icons for GitHub/Slack",
+    "Lucide fallback icons for database, redis, blob, server, bot, plug",
+    "Status indicators: green check (connected), amber check (configured), gray X (disconnected)",
+    "Collapsed sidebar view shows connected count",
+    "Expanded view shows full connector list with name, details, status",
+    "Integration with existing FileSystemBrowser (connectors section uses /api/tools endpoint)"
+  ],
+  "lint_errors_fixed": [
+    "noConstantCondition: removed || true from neptune_v2 status check",
+    "useBlockStatements: added braces to if (!cancelled) setLoading(false)"
+  ],
+  "typecheck": "passed (0 errors, 143 files)"
+}

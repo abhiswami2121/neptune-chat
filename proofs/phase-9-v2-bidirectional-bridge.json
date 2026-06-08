@@ -1,0 +1,48 @@
+{
+  "phase": 9,
+  "name": "V2 Bidirectional Bridge",
+  "status": "completed",
+  "timestamp": "2026-06-07T00:00:00.000Z",
+  "files_created": [
+    "lib/v2/bridge.ts",
+    "app/api/v2/sessions/route.ts",
+    "app/api/v2/sessions/[sessionId]/stream/route.ts",
+    "app/api/v2/sessions/[sessionId]/control/route.ts"
+  ],
+  "files_modified": [
+    "lib/agent/inline-tools.ts",
+    "app/(chat)/api/chat/route.ts"
+  ],
+  "bridge_module": {
+    "exports": [
+      "handoffToV2(prompt, context?, model?) → V2HandoffResult",
+      "listV2Sessions(status?, limit?) → V2SessionListResult",
+      "getV2Session(sessionId) → V2SessionDetail",
+      "getV2StreamUrl(sessionId) → string",
+      "getV2SSEStream(sessionId) → ReadableStream | null",
+      "controlV2Session(sessionId, action) → V2ControlResult",
+      "pingV2() → boolean"
+    ],
+    "types": "V2Session, V2HandoffResult, V2SessionListResult, V2SessionDetail, V2ControlAction, V2ControlResult"
+  },
+  "api_routes": {
+    "GET /api/v2/sessions": "List sessions (query: status, limit)",
+    "POST /api/v2/sessions": "Create session (body: prompt, context?, model?)",
+    "GET /api/v2/sessions/[sessionId]/stream": "SSE proxy for V2 progress events (maxDuration: 120s)",
+    "POST /api/v2/sessions/[sessionId]/control": "Control session (body: action = pause|resume|cancel)"
+  },
+  "new_inline_tools": [
+    "streamV2Progress — returns SSE stream URL for a session",
+    "controlV2Session — pause/resume/cancel running sessions"
+  ],
+  "chat_route_changes": [
+    "Added streamV2Progress + controlV2Session to experimental_activeTools array"
+  ],
+  "lint_errors_fixed": [
+    "useAwait: removed async from streamV2Progress.execute (no await needed)",
+    "useNumberNamespace: parseInt → Number.parseInt",
+    "noInferrableTypes: removed number annotation from limit param",
+    "format: 3 files auto-fixed (bridge.ts, route.ts, proof JSON)"
+  ],
+  "typecheck": "passed (0 errors, 151 files)"
+}
