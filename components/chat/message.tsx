@@ -19,6 +19,7 @@ import { SparklesIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
+import { ToolResultRenderer } from "./tool-result-renderer";
 import { Weather } from "./weather";
 
 const PurePreviewMessage = ({
@@ -351,10 +352,16 @@ const PurePreviewMessage = ({
               )
               : null}
             {isComplete && (
-              <ToolOutput
-                errorText={toolPart.errorText}
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                output={toolPart.output as any}
+              <ToolResultRenderer
+                part={
+                  {
+                    type: "dynamic-tool",
+                    toolName,
+                    state: toolPart.state,
+                    output: toolPart.output,
+                    errorText: toolPart.errorText,
+                  } as any
+                }
               />
             )}
           </ToolContent>

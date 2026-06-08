@@ -1,0 +1,40 @@
+# Slack Connector Playbook
+
+## Bot Token vs User Token
+- We use **bot token** (xoxb-*) — NOT user token (xoxp-*)
+- Bot must be invited to private channels before it can read them
+- For newleaf-admin (C096PSS45Q9): `/invite @bot_name` from within the channel
+- Jarvis-admin (C0AQDDC3HAB): bot must also be invited
+
+## Rate Limits
+- Tier 1: 1+ request per minute for most methods
+- Tier 2: 20+ requests per minute for `chat.postMessage`
+- Tier 3: 50+ per minute for `conversations.history`
+- **Anti-pattern:** Do NOT poll `conversations.history` in a tight loop — use events API or RTM for real-time
+
+## Channel Name Resolution
+- Prefer channel IDs over names (they never change)
+- Shortcuts available: `newleaf-admin` → C096PSS45Q9, `jarvis-admin` → C0AQDDC3HAB
+- If resolving by name: bot must have `channels:read` + `groups:read` scopes
+
+## Our Channels
+| Name | ID | Type | Purpose |
+|------|-----|------|---------|
+| newleaf-admin | C096PSS45Q9 | Private | Main operations |
+| jarvis-admin | C0AQDDC3HAB | Private | AI agent comms |
+| sales-enablement | C08RKBRU41L | Private | Sales team |
+
+## Anti-Patterns
+- ❌ Do NOT use `chat.delete` in production — Slack retains deleted messages for compliance, and it can break audit trails
+- ❌ Do NOT post messages >40,000 characters — split into multiple posts
+- ❌ Do NOT hardcode channel names without the ID resolution fallback
+- ❌ Do NOT call `search.messages` — requires user token, not bot token
+- ❌ Do NOT use `conversations.replies` without first checking if the message has a thread
+- ❌ Do NOT assume bot is in a channel — always handle `not_in_channel` error with a graceful fallback
+
+## Best Practices
+- ✅ Always handle `has_more` in pagination responses
+- ✅ Use `oldest` timestamp parameter for time-bounded queries
+- ✅ Cache channel list for 5 minutes (channels rarely change)
+- ✅ Include `channelName` + `channelId` in all responses for clarity
+- ✅ Gracefully degrade if `SLACK_BOT_TOKEN` is not set

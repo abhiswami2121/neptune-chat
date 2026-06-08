@@ -1,0 +1,58 @@
+# Base44 CRM Connector Playbook
+
+## Architecture
+Base44 is the central CRM and operations platform. It provides:
+- **Entity system**: 50+ entity types (CustomerProfile, PaymentLog, AdminNotification, etc.)
+- **Function registry**: reportingHubQuery, nmiMcpBridge, slackMcpBridge, jarvisTaskManager
+- **Knowledge graph**: cross-entity relationships and cortex references
+- **Jarvis File System**: skills, PRDs, memory files
+
+## Authentication
+- Internal token: `BASE44_API_KEY` (set in Vercel env)
+- App ID: `692f9a5fce9fd7c889a4b4ac`
+- **NEVER** use manual REST calls — always use `@base44/sdk`
+
+## Common Entities
+
+### CustomerProfile
+Key fields: `name`, `email`, `phone`, `stage`, `mrr`, `enrollment_date`, `is_submitted_client`
+Use for: customer lookups, enrollment status, MRR tracking
+
+### PaymentLog
+Key fields: `customer_id`, `amount`, `status` (success/declined/refunded), `nmi_transaction_id`, `response_code`, `created_date`
+Use for: payment history, decline analysis, revenue tracking
+
+### AdminNotification
+Key fields: `type`, `message`, `severity`, `read`, `related_entity`, `created_date`
+Use for: system alerts, operational notifications
+
+### SupportTicket
+Key fields: `customer_id`, `status`, `priority`, `assigned_agent`, `messages`, `resolution`
+Use for: customer support tracking
+
+## Key Functions
+
+### reportingHubQuery
+Actions: `overview`, `enrollments`, `lead_flow`, `billing`, `communications`, `calls`, `agents`, `support`, `automations`, `activity_feed`, `customer_360`, `customer_comms`, `sync_health`, `morning_pulse`, `vapi_intelligence`, `enrollment_intelligence`
+
+### nmiMcpBridge
+Actions: `charge`, `refund`, `void`, `vault_create`, `vault_update`, `subscription_create`, `subscription_cancel`, `transaction_query`, `customer_vault_query`
+**Bridge only — NMI keys stay on VPS**
+
+### slackMcpBridge
+Actions: `post_message`, `post_thread`, `get_channel_history`, `get_user_info`, `react`, `update_message`
+**Bridge only — Slack keys stay on VPS**
+
+## Anti-Patterns
+- ❌ Do NOT call `api.base44.app` HTTP endpoints directly from client-side code
+- ❌ Do NOT bypass `jarvisBase44Control` for entity writes — use the SDK service role
+- ❌ Do NOT use `source_transaction_id` in NMI payloads (see NMI playbook)
+- ❌ Do NOT poll entities in tight loops — use reportingHub for aggregates
+- ❌ Do NOT cache entity results for more than 30 seconds (data changes frequently)
+
+## Best Practices
+- ✅ Always use `@base44/sdk` — never manual REST
+- ✅ Use `customer_360` for complete customer dossiers (single call, all linked data)
+- ✅ Use `reportingHub` for operational dashboards (pre-aggregated)
+- ✅ Use `queryEntity` with filters for targeted lookups
+- ✅ Entity writes should always include `created_by` field for audit trail

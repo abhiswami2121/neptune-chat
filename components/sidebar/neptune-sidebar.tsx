@@ -22,10 +22,10 @@ const TABS = [
   { id: "vault", label: "Vault", icon: Key, href: "/vault" },
   { id: "tools", label: "Tools", icon: Wrench, href: "/tools" },
   {
-    id: "integrations",
-    label: "Integrations",
+    id: "connectors",
+    label: "Connectors",
     icon: Plug,
-    href: "/integrations",
+    href: "/connectors",
   },
   { id: "skills", label: "Skills", icon: Target, href: "/skills" },
   { id: "knowledge", label: "Knowledge", icon: BookOpen, href: "/knowledge" },

@@ -1,0 +1,80 @@
+# Hyperswitch Connector Playbook (NewLeaf)
+
+## Architecture
+Hyperswitch is **self-hosted** on VPS:8080 — NOT Cloud. It wraps NMI as its payment connector.
+
+**Flow:** Customer → Collect.js UI → Hyperswitch API → NMI connector → Allied Payments
+
+## Self-Hosted vs Cloud
+- We run **self-hosted** Hyperswitch (VPS:8080)
+- NOT Hyperswitch Cloud (app.hyperswitch.io)
+- Custom domain: `pay.newleaf.financial`
+- White-label mode: `branding_visibility=false` (no "Powered by Hyperswitch")
+- All traffic stays on our infrastructure
+
+## Style IDs
+Pre-configured checkout styles for different payment contexts:
+| Style ID | Context |
+|----------|---------|
+| `newleaf-sub-signup` | New subscription signup |
+| `newleaf-recovery` | Payment recovery wizard |
+| `newleaf-one-time` | One-time payment |
+| `newleaf-upgrade` | Plan upgrade |
+| `newleaf-resume` | Resume canceled subscription |
+
+## Payment Link Configuration
+**CRITICAL:** `payment_link_config_id` is a **TOP-LEVEL** field — NOT nested inside `payment_link_config` object. This was a historic bug, don't repeat it.
+
+✅ Correct:
+```json
+{
+  "amount": 12999,
+  "currency": "USD",
+  "payment_link_config_id": "newleaf-sub-signup"
+}
+```
+
+❌ Wrong (historic bug):
+```json
+{
+  "amount": 12999,
+  "currency": "USD",
+  "payment_link_config": {
+    "id": "newleaf-sub-signup"
+  }
+}
+```
+
+## MIT off_session
+For merchant-initiated recurring charges:
+- CIT setup: `setup_future_usage="off_session"` + `customer_acceptance`
+- MIT charges: `recurring_details.payment_method_id` from vault
+- NO CVV on MIT (card is stored)
+- NO customer IP on MIT (merchant not customer)
+
+## Webhook Verification
+- Signature: HMAC-SHA512 of raw request body
+- Key: `payment_response_hash_key` from Hyperswitch config
+- Verify EVERY webhook before processing
+- Headers: `x-hyperswitch-signature`
+
+## NMI as Internal Connector
+- Hyperswitch uses NMI as its **internal payment connector**
+- We do NOT configure NMI credentials in chat — Hyperswitch handles that
+- Chat tools proxy through vps-tools-bridge → Hyperswitch
+- Hyperswitch payment_id format: `pay_<random>` (different from NMI txn IDs)
+
+## Anti-Patterns
+- ❌ Do NOT call Hyperswitch Cloud endpoints — we're self-hosted
+- ❌ Do NOT nest `payment_link_config_id` inside an object
+- ❌ Do NOT send CVV on MIT charges
+- ❌ Do NOT send customer IP on MIT charges
+- ❌ Do NOT retry a payment more than 3 times in 24h (fraud velocity)
+- ❌ Do NOT process webhooks without HMAC verification
+
+## Best Practices
+- ✅ Always set `branding_visibility=false` for white-label
+- ✅ Use style IDs consistently for brand consistency
+- ✅ Include idempotency keys for payment creation
+- ✅ Monitor webhook delivery failures via Hyperswitch dashboard
+- ✅ Cache payment method tokens (they don't change once vaulted)

@@ -1,0 +1,80 @@
+# NMI Connector Playbook (NewLeaf)
+
+## Architecture
+NMI is wrapped **INSIDE Hyperswitch** as a connector. We send tokens + transactions through Hyperswitch, which uses the NMI security key to call Allied Payments (`ap.transactiongateway.com`).
+
+**Flow:** neptune-chat → vps-tools-bridge → Hyperswitch → NMI → Allied Payments
+
+## CIT vs MIT (MUST UNDERSTAND)
+
+### CIT (Customer-Initiated Transaction)
+- First charge, card-on-file setup
+- CVV **required** (captured via Collect.js iframe)
+- Customer IP **must** be captured
+- Field `initiated_by`: `"customer"`
+- Field `stored_credential_indicator`: `"stored"` (first setup)
+- Day 0 authorization authenticates the card for future MIT charges
+
+### MIT (Merchant-Initiated Transaction)
+- Recurring subscription charges
+- No CVV (stored on vault, not passed)
+- No customer presence (no IP should be sent)
+- Field `initiated_by`: `"merchant"`
+- Field `stored_credential_indicator`: `"used"`
+- Field `billing_method`: `"recurring"`
+- Field `initial_transaction_id`: Day 0 CIT txn ID (consent proof)
+
+## Golden Vault Flow
+1. Customer fills card via Collect.js iframe (PCI isolated)
+2. We do $0 auth (CIT) with customer IP + `customer_acceptance` → captures `network_transaction_id` as `nmiDayZeroTransactionId`
+3. Create vault from token → stores `customer_vault_id` as `nmiVaultId`
+4. Create subscription pointing at vault
+5. Every recurring charge passes `initial_transaction_id=<Day 0 txn>`
+
+## source_transaction_id Anti-Pattern (CRITICAL)
+
+### ❌ NEVER DO THIS:
+```json
+{
+  "source_transaction_id": "<raw PAN transaction>",
+  "card_number": "4111111111111111"
+}
+```
+`source_transaction_id` is the **raw PAN** field. Using it with stored credentials breaks PCI compliance and triggers fraud detection.
+
+### ✅ ALWAYS DO THIS:
+```json
+{
+  "initial_transaction_id": "<Day 0 CIT txn ID>",
+  "customer_vault_id": "<vault ID from NMI>"
+}
+```
+`initial_transaction_id` is the **consent proof** — it references the original CIT that authenticated the card. This is PCI-compliant.
+
+## Velocity Guard
+Block charge if vault has 3+ failures in 24h (memory `6a1f118b`).
+
+## Hard Decline Codes (DO NOT retry)
+- **250**: Declined (generic)
+- **251**: Insufficient funds (smart retry may apply — once only)
+- **252**: Invalid card number
+- **253**: Expired card
+- **254**: CVV mismatch (CIT only)
+- Retrying 250-254 more than once triggers **fraud velocity flags** at Allied Payments
+
+## Hyperswitch Wrapping
+- **NEVER** call NMI directly for new flows — always go through Hyperswitch
+- Hyperswitch handles: tokenization, routing, webhook delivery, idempotency
+- Direct NMI is ONLY for: vault queries, transaction lookups, refunds on legacy txns
+- Hyperswitch webhook: HMAC-SHA512 of raw body with `payment_response_hash_key`
+
+## Allied Payments Domain
+- API endpoint: `ap.transactiongateway.com`
+- All production traffic goes through this domain
+- Sandbox: `sandbox.transactiongateway.com`
+
+## Subscription Management
+- `subscription_create`: Attach to vault ID, set interval + amount
+- `subscription_update`: Change amount, next charge date, or status
+- `subscription_cancel`: Set status to canceled (NOT deleted — audit trail preserved)
+- `subscription_query`: Get current state, next charge, payment history
