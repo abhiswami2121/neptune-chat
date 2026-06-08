@@ -1,0 +1,102 @@
+'use client';
+
+import { Wrench, Search, ChevronDown } from 'lucide-react';
+import { useState } from 'react';
+import { cn } from '@/lib/utils';
+
+interface ToolDef {
+  name: string;
+  description: string;
+  inputs: string;
+}
+
+interface Category {
+  name: string;
+  tools: ToolDef[];
+}
+
+export function ToolsClient({ categories }: { categories: Category[] }) {
+  const [search, setSearch] = useState('');
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(
+    Object.fromEntries(categories.map((c) => [c.name, true])),
+  );
+
+  const filtered = categories
+    .map((cat) => ({
+      ...cat,
+      tools: cat.tools.filter(
+        (t) =>
+          !search ||
+          t.name.toLowerCase().includes(search.toLowerCase()) ||
+          t.description.toLowerCase().includes(search.toLowerCase()),
+      ),
+    }))
+    .filter((cat) => cat.tools.length > 0);
+
+  return (
+    <div className="space-y-4">
+      <div className="relative">
+        <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" />
+        <input
+          type="text"
+          placeholder="Search tools..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-3 py-2 text-sm rounded-lg border bg-background focus:outline-none focus:ring-2 focus:ring-primary/20"
+        />
+      </div>
+
+      {filtered.map((cat) => (
+        <div key={cat.name}>
+          <button
+            onClick={() =>
+              setExpanded((prev) => ({ ...prev, [cat.name]: !prev[cat.name] }))
+            }
+            className="flex items-center gap-2 w-full text-left py-1 mb-2"
+          >
+            <ChevronDown
+              className={cn(
+                'w-4 h-4 text-muted-foreground transition-transform',
+                !expanded[cat.name] && '-rotate-90',
+              )}
+            />
+            <span className="text-sm font-medium">{cat.name}</span>
+            <span className="text-xs text-muted-foreground">
+              {cat.tools.length} tools
+            </span>
+          </button>
+
+          {expanded[cat.name] && (
+            <div className="grid gap-2 ml-6">
+              {cat.tools.map((tool) => (
+                <div
+                  key={tool.name}
+                  className="flex items-start gap-3 p-3 rounded-lg border bg-card hover:bg-accent/5 transition-colors"
+                >
+                  <Wrench className="w-4 h-4 text-muted-foreground mt-0.5 flex-shrink-0" />
+                  <div className="flex-1 min-w-0">
+                    <code className="text-sm font-mono text-primary">
+                      {tool.name}
+                    </code>
+                    <p className="text-xs text-muted-foreground mt-0.5">
+                      {tool.description}
+                    </p>
+                    <code className="text-[10px] text-muted-foreground/60 mt-1 block">
+                      {tool.inputs}
+                    </code>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      ))}
+
+      {filtered.length === 0 && (
+        <p className="text-sm text-muted-foreground text-center py-8">
+          No tools match &quot;{search}&quot;
+        </p>
+      )}
+    </div>
+  );
+}
