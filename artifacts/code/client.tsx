@@ -14,79 +14,13 @@ import {
   RedoIcon,
   UndoIcon,
 } from "@/components/chat/icons";
+import { SandboxRunner } from "@/components/chat/sandbox-runner";
 import { generateUUID } from "@/lib/utils";
+import { detectArtifactLanguage } from "@/lib/types";
 
-// Cache the Pyodide instance globally to avoid re-initializing on every Run click.
-// Pyodide WASM is ~12MB — re-downloading it per run wastes bandwidth and causes
-// "error initializing decimal" race conditions when the previous init isn't done.
-const globalAny: any = globalThis;
-
-let pyodideInstancePromise: Promise<any> | null = null;
-
-function getPyodideInstance() {
-  if (pyodideInstancePromise) {
-    return pyodideInstancePromise;
-  }
-
-  if (typeof globalAny.loadPyodide !== "function") {
-    throw new Error(
-      "Python sandbox is still loading. The Pyodide runtime (~12MB) is being downloaded. " +
-        "Please wait a moment and try again."
-    );
-  }
-
-  pyodideInstancePromise = globalAny.loadPyodide({
-    indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
-  });
-
-  return pyodideInstancePromise;
-}
-
-const OUTPUT_HANDLERS = {
-  matplotlib: `
-    import io
-    import base64
-    from matplotlib import pyplot as plt
-
-    # Clear any existing plots
-    plt.clf()
-    plt.close('all')
-
-    # Switch to agg backend
-    plt.switch_backend('agg')
-
-    def setup_matplotlib_output():
-        def custom_show():
-            if plt.gcf().get_size_inches().prod() * plt.gcf().dpi ** 2 > 25_000_000:
-                print("Warning: Plot size too large, reducing quality")
-                plt.gcf().set_dpi(100)
-
-            png_buf = io.BytesIO()
-            plt.savefig(png_buf, format='png')
-            png_buf.seek(0)
-            png_base64 = base64.b64encode(png_buf.read()).decode('utf-8')
-            print(f'data:image/png;base64,{png_base64}')
-            png_buf.close()
-
-            plt.clf()
-            plt.close('all')
-
-        plt.show = custom_show
-  `,
-  basic: `
-    # Basic output capture setup
-  `,
-};
-
-function detectRequiredHandlers(code: string): string[] {
-  const handlers: string[] = ["basic"];
-
-  if (code.includes("matplotlib") || code.includes("plt.")) {
-    handlers.push("matplotlib");
-  }
-
-  return handlers;
-}
+// NOTE: Pyodide singleton is managed inside SandboxRunner (components/chat/sandbox-runner.tsx).
+// The old global caching is preserved there for Python execution only.
+// HTML/CSS/JS/TS artifacts NEVER hit Pyodide — they use iframe srcdoc or sandboxed eval.
 
 type Metadata = {
   outputs: ConsoleOutput[];
@@ -95,7 +29,7 @@ type Metadata = {
 export const codeArtifact = new Artifact<"code", Metadata>({
   kind: "code",
   description:
-    "Useful for code generation; Code execution is only available for python code.",
+    "Code generation with language-aware execution. HTML → preview, Python → Pyodide, JS/TS → sandbox eval.",
   initialize: ({ setMetadata }) => {
     setMetadata({
       outputs: [],
@@ -103,27 +37,39 @@ export const codeArtifact = new Artifact<"code", Metadata>({
   },
   onStreamPart: ({ streamPart, setArtifact }) => {
     if (streamPart.type === "data-codeDelta") {
-      setArtifact((draftArtifact) => ({
-        ...draftArtifact,
-        content: streamPart.data,
-        isVisible:
-          draftArtifact.status === "streaming" &&
-          draftArtifact.content.length > 300 &&
-          draftArtifact.content.length < 310
-            ? true
-            : draftArtifact.isVisible,
-        status: "streaming",
-      }));
+      setArtifact((draftArtifact) => {
+        // Auto-detect language during streaming for early feedback
+        const detected = detectArtifactLanguage(streamPart.data);
+        return {
+          ...draftArtifact,
+          content: streamPart.data,
+          language: draftArtifact.language || (detected !== "unknown" ? detected : undefined),
+          isVisible:
+            draftArtifact.status === "streaming" &&
+            draftArtifact.content.length > 300 &&
+            draftArtifact.content.length < 310
+              ? true
+              : draftArtifact.isVisible,
+          status: "streaming",
+        };
+      });
     }
   },
-  content: ({ metadata, setMetadata, ...props }) => {
+  content: ({ metadata, setMetadata, content, ...props }) => {
+    // Detect language for the content display
+    const language = detectArtifactLanguage(content);
+
     return (
       <>
         <div className="relative min-h-[200px]">
-          <CodeEditor {...props} />
+          <CodeEditor
+            {...props}
+            content={content}
+          />
         </div>
 
-        {metadata?.outputs && (
+        {/* Sandbox output — language-aware execution results */}
+        {metadata?.outputs && metadata.outputs.length > 0 && (
           <Console
             consoleOutputs={metadata.outputs}
             setConsoleOutputs={() => {
@@ -144,6 +90,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
       description: "Execute code",
       onClick: async ({ content, setMetadata }) => {
         const runId = generateUUID();
+        const language = detectArtifactLanguage(content);
         const outputContent: ConsoleOutputContent[] = [];
 
         setMetadata((metadata) => ({
@@ -152,63 +99,22 @@ export const codeArtifact = new Artifact<"code", Metadata>({
             ...metadata.outputs,
             {
               id: runId,
-              contents: [],
+              contents: [{ type: "text", value: `Detected: ${language}` }],
               status: "in_progress",
             },
           ],
         }));
 
-        try {
-          const currentPyodideInstance = await getPyodideInstance();
-
-          currentPyodideInstance.setStdout({
-            batched: (output: string) => {
-              outputContent.push({
-                type: output.startsWith("data:image/png;base64")
-                  ? "image"
-                  : "text",
-                value: output,
-              });
-            },
+        // ── HTML/CSS → no Pyodide needed, preview handled by SandboxRunner ──
+        if (language === "html" || language === "css") {
+          outputContent.push({
+            type: "text",
+            value: `✅ HTML document detected — rendering as web preview. Use "Open in new tab" to view full page.`,
           });
-
-          await currentPyodideInstance.loadPackagesFromImports(content, {
-            messageCallback: (message: string) => {
-              setMetadata((metadata) => ({
-                ...metadata,
-                outputs: [
-                  ...metadata.outputs.filter((output) => output.id !== runId),
-                  {
-                    id: runId,
-                    contents: [{ type: "text", value: message }],
-                    status: "loading_packages",
-                  },
-                ],
-              }));
-            },
-          });
-
-          const requiredHandlers = detectRequiredHandlers(content);
-          for (const handler of requiredHandlers) {
-            if (OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]) {
-              await currentPyodideInstance.runPythonAsync(
-                OUTPUT_HANDLERS[handler as keyof typeof OUTPUT_HANDLERS]
-              );
-
-              if (handler === "matplotlib") {
-                await currentPyodideInstance.runPythonAsync(
-                  "setup_matplotlib_output()"
-                );
-              }
-            }
-          }
-
-          await currentPyodideInstance.runPythonAsync(content);
-
           setMetadata((metadata) => ({
             ...metadata,
             outputs: [
-              ...metadata.outputs.filter((output) => output.id !== runId),
+              ...metadata.outputs.filter((o) => o.id !== runId),
               {
                 id: runId,
                 contents: outputContent,
@@ -216,25 +122,172 @@ export const codeArtifact = new Artifact<"code", Metadata>({
               },
             ],
           }));
-        } catch (error: unknown) {
-          setMetadata((metadata) => ({
-            ...metadata,
-            outputs: [
-              ...metadata.outputs.filter((output) => output.id !== runId),
-              {
-                id: runId,
-                contents: [
-                  {
-                    type: "text",
-                    value:
-                      error instanceof Error ? error.message : String(error),
-                  },
-                ],
-                status: "failed",
-              },
-            ],
-          }));
+          return;
         }
+
+        // ── Python → Pyodide (the ONLY path that uses Pyodide) ──
+        if (language === "python") {
+          try {
+            // Delegate to SandboxRunner's Python runner — accessing Pyodide internally
+            const globalAny: any = globalThis;
+            if (typeof globalAny.loadPyodide !== "function") {
+              throw new Error(
+                "Python sandbox is still loading (~12MB). Please wait and try again."
+              );
+            }
+
+            let pyodidePromise: any = null;
+            if (!(globalAny as any).__pyodideInstance) {
+              pyodidePromise = globalAny.loadPyodide({
+                indexURL: "https://cdn.jsdelivr.net/pyodide/v0.23.4/full/",
+              });
+              (globalAny as any).__pyodideInstance = pyodidePromise;
+            } else {
+              pyodidePromise = (globalAny as any).__pyodideInstance;
+            }
+
+            const pyodide = await pyodidePromise;
+
+            pyodide.setStdout({
+              batched: (output: string) => {
+                outputContent.push({
+                  type: output.startsWith("data:image/png;base64")
+                    ? "image"
+                    : "text",
+                  value: output,
+                });
+              },
+            });
+
+            await pyodide.loadPackagesFromImports(content, {
+              messageCallback: (message: string) => {
+                outputContent.push({ type: "text", value: `[pkg] ${message}` });
+              },
+            });
+
+            // Matplotlib setup
+            await pyodide.runPythonAsync(`
+import io, base64
+from matplotlib import pyplot as plt
+plt.switch_backend('agg')
+def _show():
+    buf = io.BytesIO()
+    plt.savefig(buf, format='png')
+    buf.seek(0)
+    print('data:image/png;base64,' + base64.b64encode(buf.read()).decode())
+    buf.close()
+    plt.clf()
+    plt.close('all')
+plt.show = _show
+            `);
+
+            await pyodide.runPythonAsync(content);
+
+            setMetadata((metadata) => ({
+              ...metadata,
+              outputs: [
+                ...metadata.outputs.filter((o) => o.id !== runId),
+                {
+                  id: runId,
+                  contents: outputContent,
+                  status: "completed",
+                },
+              ],
+            }));
+            return;
+          } catch (error: unknown) {
+            setMetadata((metadata) => ({
+              ...metadata,
+              outputs: [
+                ...metadata.outputs.filter((o) => o.id !== runId),
+                {
+                  id: runId,
+                  contents: [
+                    {
+                      type: "text",
+                      value:
+                        error instanceof Error ? error.message : String(error),
+                    },
+                  ],
+                  status: "failed",
+                },
+              ],
+            }));
+            return;
+          }
+        }
+
+        // ── JavaScript/TypeScript → sandboxed execution ──
+        if (
+          language === "javascript" ||
+          language === "typescript" ||
+          language === "jsx" ||
+          language === "tsx"
+        ) {
+          try {
+            const logs: string[] = [];
+            const capture = (...args: any[]) => {
+              logs.push(args.map(String).join(" "));
+            };
+            const fn = new Function("console", content);
+            fn({ log: capture, error: capture, warn: capture });
+            for (const log of logs) {
+              outputContent.push({ type: "text", value: log });
+            }
+            if (logs.length === 0) {
+              outputContent.push({
+                type: "text",
+                value: "✅ Code executed (no console output).",
+              });
+            }
+            setMetadata((metadata) => ({
+              ...metadata,
+              outputs: [
+                ...metadata.outputs.filter((o) => o.id !== runId),
+                {
+                  id: runId,
+                  contents: outputContent,
+                  status: "completed",
+                },
+              ],
+            }));
+            return;
+          } catch (error: unknown) {
+            outputContent.push({
+              type: "text",
+              value: `JS Error: ${error instanceof Error ? error.message : String(error)}`,
+            });
+            setMetadata((metadata) => ({
+              ...metadata,
+              outputs: [
+                ...metadata.outputs.filter((o) => o.id !== runId),
+                {
+                  id: runId,
+                  contents: outputContent,
+                  status: "failed",
+                },
+              ],
+            }));
+            return;
+          }
+        }
+
+        // ── Unknown → show as code only, no execution ──
+        outputContent.push({
+          type: "text",
+          value: `⚠️ Unknown language (${language}). Cannot execute safely. Content is shown as code only.`,
+        });
+        setMetadata((metadata) => ({
+          ...metadata,
+          outputs: [
+            ...metadata.outputs.filter((o) => o.id !== runId),
+            {
+              id: runId,
+              contents: outputContent,
+              status: "completed",
+            },
+          ],
+        }));
       },
     },
     {
@@ -244,10 +297,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
         handleVersionChange("prev");
       },
       isDisabled: ({ currentVersionIndex }) => {
-        if (currentVersionIndex === 0) {
-          return true;
-        }
-
+        if (currentVersionIndex === 0) return true;
         return false;
       },
     },
@@ -258,10 +308,7 @@ export const codeArtifact = new Artifact<"code", Metadata>({
         handleVersionChange("next");
       },
       isDisabled: ({ isCurrentVersion }) => {
-        if (isCurrentVersion) {
-          return true;
-        }
-
+        if (isCurrentVersion) return true;
         return false;
       },
     },
