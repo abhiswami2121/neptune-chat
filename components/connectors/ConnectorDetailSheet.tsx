@@ -5,16 +5,19 @@
  *
  * Tools are auto-derived from manifest.capabilities.
  * Knowledge shows related wiki pages (cortex skills + PRDs).
+ * Playbook fetches and renders the actual PLAYBOOK.md content.
  */
 import {
   BookOpenIcon,
   ExternalLinkIcon,
   FileTextIcon,
   HistoryIcon,
+  RefreshCwIcon,
   WrenchIcon,
   ZapIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -100,6 +103,37 @@ export function ConnectorDetailSheet({
   if (!manifest) return null;
   const Icon = manifest.icon;
   const knowledge = CONNECTOR_KNOWLEDGE[manifest.id] || [];
+
+  // Playbook content state
+  const [playbookContent, setPlaybookContent] = useState<string | null>(null);
+  const [playbookLoading, setPlaybookLoading] = useState(false);
+  const [playbookSections, setPlaybookSections] = useState<
+    { heading: string; content: string; level: number }[]
+  >([]);
+
+  const loadPlaybook = useCallback(async () => {
+    if (playbookContent !== null) return; // already loaded
+    setPlaybookLoading(true);
+    try {
+      const res = await fetch(`/api/connectors/${manifest.id}/playbook`);
+      if (res.ok) {
+        const data = await res.json();
+        setPlaybookContent(data.rawMarkdown || "");
+        setPlaybookSections(data.sections || []);
+      } else {
+        setPlaybookContent("");
+      }
+    } catch {
+      setPlaybookContent("");
+    }
+    setPlaybookLoading(false);
+  }, [manifest.id, playbookContent]);
+
+  // Reset playbook when connector changes
+  useEffect(() => {
+    setPlaybookContent(null);
+    setPlaybookSections([]);
+  }, [manifest.id]);
 
   return (
     <Sheet onOpenChange={onOpenChange} open={open}>
@@ -305,35 +339,81 @@ export function ConnectorDetailSheet({
             </TabsContent>
 
             {/* ── Playbook Tab ── */}
-            <TabsContent className="p-4 mt-0" value="playbook">
-              <Card className="p-4 bg-muted/20">
-                <div className="flex items-center gap-2 mb-2">
-                  <FileTextIcon className="w-4 h-4 text-muted-foreground" />
-                  <span className="text-sm font-medium">Playbook</span>
+            <TabsContent
+              className="p-4 mt-0"
+              onClick={loadPlaybook}
+              onFocus={loadPlaybook}
+              onMouseEnter={loadPlaybook}
+              value="playbook"
+            >
+              {playbookLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCwIcon className="w-5 h-5 text-muted-foreground animate-spin" />
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Source:{" "}
-                  <code className="text-[11px] bg-muted px-1 py-0.5 rounded font-mono">
-                    {manifest.playbookPath}
-                  </code>
-                </p>
-                <p className="text-xs text-muted-foreground mt-3">
-                  The playbook contains domain-specific guidance, anti-patterns,
-                  and best practices for this connector. It is loaded by the AI
-                  agent before executing any tools.
-                </p>
-                <div className="mt-3 p-3 bg-muted/40 rounded-md">
+              ) : playbookContent ? (
+                <div className="space-y-4">
+                  {playbookSections.map((section) => (
+                    <div key={section.heading}>
+                      {section.level === 2 ? (
+                        <h3 className="text-sm font-semibold text-foreground mb-2 pb-1 border-b">
+                          {section.heading}
+                        </h3>
+                      ) : section.level === 3 ? (
+                        <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mt-3 mb-1">
+                          {section.heading}
+                        </h4>
+                      ) : section.heading === "(preamble)" ? (
+                        <div className="text-xs text-muted-foreground font-mono bg-muted/30 p-2 rounded overflow-x-auto whitespace-pre-wrap">
+                          {section.content.slice(0, 300)}
+                        </div>
+                      ) : (
+                        <h2 className="text-base font-bold mb-1">
+                          {section.heading}
+                        </h2>
+                      )}
+                      <div className="text-xs text-muted-foreground leading-relaxed whitespace-pre-wrap">
+                        {section.content}
+                      </div>
+                    </div>
+                  ))}
+                  <div className="mt-4 p-3 bg-muted/30 rounded-md border border-muted">
+                    <p className="text-[11px] text-muted-foreground">
+                      Source:{" "}
+                      <code className="text-[10px] bg-muted px-1 py-0.5 rounded font-mono">
+                        lib/connectors/{manifest.id}/PLAYBOOK.md
+                      </code>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground mt-1">
+                      Full documentation in{" "}
+                      <Link
+                        className="text-primary hover:underline"
+                        href={`/wiki?search=${manifest.id}`}
+                      >
+                        Wiki
+                      </Link>
+                    </p>
+                  </div>
+                </div>
+              ) : playbookContent === "" ? (
+                <Card className="p-4 bg-muted/20 text-center">
+                  <FileTextIcon className="w-8 h-8 text-muted-foreground/30 mx-auto mb-2" />
                   <p className="text-xs text-muted-foreground italic">
-                    Playbook rendering (MDX) is available in the Wiki at{" "}
-                    <Link
-                      className="text-primary hover:underline"
-                      href={`/wiki/connectors/${manifest.id}`}
-                    >
-                      /wiki/connectors/{manifest.id}
-                    </Link>
+                    No playbook found for {manifest.name}.
                   </p>
-                </div>
-              </Card>
+                </Card>
+              ) : (
+                <Card className="p-4 bg-muted/20">
+                  <div className="flex items-center gap-2 mb-2">
+                    <FileTextIcon className="w-4 h-4 text-muted-foreground" />
+                    <span className="text-sm font-medium">Playbook</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Hover or click the Playbook tab to load the operational
+                    guide for {manifest.name}. Contains anti-patterns,
+                    safeguards, business context, and common workflows.
+                  </p>
+                </Card>
+              )}
             </TabsContent>
 
             {/* ── Knowledge Tab (related skills, PRDs, memory) ── */}

@@ -1,5 +1,5 @@
 import equal from "fast-deep-equal";
-import { memo } from "react";
+import { memo, useCallback } from "react";
 import { toast } from "sonner";
 import { useSWRConfig } from "swr";
 import { useCopyToClipboard } from "usehooks-ts";
@@ -31,20 +31,42 @@ export function PureMessageActions({
     return null;
   }
 
-  const textFromParts = message.parts
-    ?.filter((part) => part.type === "text")
-    .map((part) => part.text)
-    .join("\n")
-    .trim();
+  /** Build full copyable text: text parts + tool call results + artifact code */
+  const buildFullCopyText = useCallback(() => {
+    const parts: string[] = [];
+
+    if (message.parts) {
+      for (const part of message.parts) {
+        if (part.type === "text") {
+          parts.push(part.text);
+        } else if (part.type === "tool-invocation") {
+          const ti = part as { type: string; toolInvocation?: { toolName?: string; state?: string; result?: unknown } };
+          const inv = ti.toolInvocation;
+          if (inv) {
+            parts.push(`\n--- Tool: ${inv.toolName || "unknown"} (${inv.state || "unknown"}) ---`);
+            if (inv.result) {
+              parts.push(typeof inv.result === "string" ? inv.result : JSON.stringify(inv.result, null, 2));
+            }
+          }
+        } else if (part.type === "file") {
+          const f = part as { type: string; url?: string; mediaType?: string };
+          parts.push(`\n[File: ${f.url || "unknown"} (${f.mediaType || "unknown"})]`);
+        }
+      }
+    }
+
+    return parts.join("\n\n").trim();
+  }, [message.parts]);
 
   const handleCopy = async () => {
-    if (!textFromParts) {
+    const fullText = buildFullCopyText();
+    if (!fullText) {
       toast.error("There's no text to copy!");
       return;
     }
 
-    await copyToClipboard(textFromParts);
-    toast.success("Copied to clipboard!");
+    await copyToClipboard(fullText);
+    toast.success("Copied full response to clipboard!");
   };
 
   if (message.role === "user") {
@@ -78,7 +100,7 @@ export function PureMessageActions({
       <Action
         className="text-muted-foreground/50 hover:text-foreground"
         onClick={handleCopy}
-        tooltip="Copy"
+        tooltip="Copy full response (Cmd+Shift+C)"
       >
         <CopyIcon />
       </Action>
