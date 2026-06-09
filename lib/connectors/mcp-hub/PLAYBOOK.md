@@ -1,3 +1,17 @@
+---
+connector: mcp-hub
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - mcp-hub:listServers
+  - mcp-hub:connectServer
+  - mcp-hub:listTools
+headline: |
+  MCP Hub multi-server aggregator. Tools discovered at runtime via MCP protocol.
+  Never assume tools are available — always check connection status first.
+---
+
 # MCP Hub Connector Playbook
 
 ## Operational Knowledge

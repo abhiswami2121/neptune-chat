@@ -1,3 +1,18 @@
+---
+connector: nmi
+version: 0.4.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - nmi:getSubscription
+  - nmi:getVault
+  - nmi:queryTransactions
+  - nmi:refundTransaction
+headline: |
+  NMI payment gateway via Hyperswitch. Never use source_transaction_id.
+  Recurring MIT charges must reference Day 0 CIT. Hard declines 250-254 do not retry.
+---
+
 # NMI Connector Playbook (NewLeaf)
 
 ## Operational Knowledge

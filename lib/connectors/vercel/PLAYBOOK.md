@@ -1,3 +1,19 @@
+---
+connector: vercel
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - vercel:listDeploys
+  - vercel:getDeployLog
+  - vercel:listProjects
+  - vercel:createProject
+  - vercel:redeploy
+headline: |
+  Vercel deployment platform. Never hardcode project IDs — resolve by name via listProjects.
+  VERCEL_TOKEN is server-only. Concurrent deploys can race — check before redeploying.
+---
+
 # Vercel Connector Playbook
 
 ## Operational Knowledge

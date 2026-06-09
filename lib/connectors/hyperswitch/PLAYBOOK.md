@@ -1,3 +1,17 @@
+---
+connector: hyperswitch
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - hyperswitch:createPaymentLink
+  - hyperswitch:listPayments
+  - hyperswitch:refundPayment
+headline: |
+  Hyperswitch payment orchestration. All new payment flows go through here, not NMI directly.
+  Refunds need idempotency keys. Never poll — use webhooks for event-driven flows.
+---
+
 # Hyperswitch Connector Playbook
 
 ## Operational Knowledge

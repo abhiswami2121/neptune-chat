@@ -1,3 +1,19 @@
+---
+connector: github
+version: 0.3.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - github:searchCode
+  - github:getFile
+  - github:listPRs
+  - github:createPR
+  - github:spawnCodingAgent
+headline: |
+  GitHub repo connector. Never push directly to main on protected repos.
+  All AI commits go through PR with `ai-agent` label. Secret scanning is on.
+---
+
 # GitHub Connector Playbook
 
 ## Operational Knowledge

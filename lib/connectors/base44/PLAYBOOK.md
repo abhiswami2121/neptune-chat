@@ -1,3 +1,20 @@
+---
+connector: base44
+version: 0.3.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - base44:createEntity
+  - base44:customer360
+  - base44:invokeFunction
+  - base44:queryEntity
+  - base44:reportingHub
+  - base44:updateEntity
+headline: |
+  Base44 central backend for NewLeaf ops. 12 queryable entities, 16 report actions.
+  Never call hostingerBridge from off-VPS. Query with filters, always paginate.
+---
+
 # Base44 Connector Playbook
 
 ## Operational Knowledge

@@ -1,3 +1,19 @@
+---
+connector: ghl
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - ghl:createContact
+  - ghl:sendSms
+  - ghl:sendEmail
+  - ghl:queryConversations
+  - ghl:getOpportunity
+headline: |
+  GoHighLevel CRM via Base44 bridge. SMS requires opt-in + 9am-9pm window.
+  Never hardcode GHL API key in Neptune — it lives in Base44. TCPA + CAN-SPAM compliant.
+---
+
 # GoHighLevel Connector Playbook
 
 ## Operational Knowledge

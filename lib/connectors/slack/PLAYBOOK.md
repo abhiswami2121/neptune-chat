@@ -1,3 +1,19 @@
+---
+connector: slack
+version: 0.4.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - slack:postMessage
+  - slack:pullMessages
+  - slack:listChannels
+  - slack:searchChannels
+  - slack:reactionAdd
+headline: |
+  Slack messaging connector. Verify channel_id is in allowlist before posting.
+  Redact customer PII (card, SSN, DOB). Rate limit 1 msg/sec per channel.
+---
+
 # Slack Connector Playbook
 
 ## Operational Knowledge

@@ -1,3 +1,19 @@
+---
+connector: wiki
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - wiki:ingestSource
+  - wiki:queryWiki
+  - wiki:lintWiki
+  - wiki:writeWikiPage
+  - wiki:updateIndex
+headline: |
+  Karpathy Wiki long-term memory. Never store PII or credentials in wiki pages.
+  All pages need title, category, tags. Deprecate with [DEPRECATED] — never delete.
+---
+
 # Wiki (Karpathy Wiki) Connector Playbook
 
 ## Operational Knowledge

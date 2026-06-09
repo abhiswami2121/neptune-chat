@@ -1,3 +1,18 @@
+---
+connector: linear
+version: 0.3.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - linear:listIssues
+  - linear:createIssue
+  - linear:searchIssues
+  - linear:listProjects
+headline: |
+  Linear issue tracker. Route to correct team (ENG/OPS/PAY/COMP/AGT). Never auto-close
+  without closing comment. Priority 1 means urgent — confirm on-call is paged.
+---
+
 # Linear Connector Playbook
 
 ## Operational Knowledge

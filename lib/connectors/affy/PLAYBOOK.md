@@ -1,3 +1,18 @@
+---
+connector: affy
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - affy:getChargebacks
+  - affy:submitEvidence
+  - affy:generateAffidavit
+  - affy:trackDispute
+headline: |
+  Affy chargeback dispute management via Base44 bridge. Never auto-approve chargeback
+  responses — always human review. Missing a deadline means losing the dispute.
+---
+
 # Affy (Chargeback/Affidavit) Connector Playbook
 
 ## Operational Knowledge

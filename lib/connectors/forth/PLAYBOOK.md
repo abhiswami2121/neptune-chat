@@ -1,3 +1,19 @@
+---
+connector: forth
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - forth:getDisputes
+  - forth:updateDispute
+  - forth:queryContact
+  - forth:pullCreditReport
+  - forth:listEnrollments
+headline: |
+  Forth DPP credit repair. SSN only last 4 digits. Credit reports encrypted at rest.
+  FCRA compliance required — never pull without signed authorization.
+---
+
 # Forth (DPP/Credit) Connector Playbook
 
 ## Operational Knowledge

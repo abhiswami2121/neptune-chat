@@ -1,3 +1,19 @@
+---
+connector: vapi
+version: 0.2.0
+scope: connector
+auto_load: true
+trigger_tools:
+  - vapi:listV2Sessions
+  - vapi:getV2Session
+  - vapi:postV2Session
+  - vapi:streamV2Progress
+  - vapi:controlV2Session
+headline: |
+  Neptune V2 coding engine bridge. Posts to NEPTUNE_V2_CHAT_URL with handoff secret.
+  Sessions run in E2B sandboxes. Always use SSE streaming — never poll in tight loops.
+---
+
 # Vapi (Neptune V2) Connector Playbook
 
 ## Operational Knowledge
