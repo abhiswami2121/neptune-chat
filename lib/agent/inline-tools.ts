@@ -12,6 +12,10 @@
 import { WebClient } from "@slack/web-api";
 import { tool } from "ai";
 import { z } from "zod";
+import {
+  createWorkflow,
+  updateWorkflow,
+} from "@/lib/ai/tools/create-workflow";
 
 // ── Configuration ────────────────────────────────────────────────────────
 
@@ -906,6 +910,8 @@ export const inlineTools = {
   fetchURL,
   // Workflow
   runWorkflow,
+  createWorkflow,
+  updateWorkflow,
   // V2 Bridge
   listV2Sessions,
   getV2Session,
@@ -924,6 +930,8 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
   pullSlackMessages: ["SLACK_BOT_TOKEN"],
   fetchURL: [],
   runWorkflow: [],
+  createWorkflow: [],
+  updateWorkflow: [],
   listV2Sessions: [],
   getV2Session: [],
   postV2Session: [],

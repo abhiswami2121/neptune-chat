@@ -63,12 +63,25 @@ About the origin of user's request:
 - country: ${requestHints.country}
 `;
 
+/**
+ * Playbook context injected into the system prompt.
+ * Populated by the chat route's playbook auto-load mechanism.
+ */
+export type PlaybookContext = {
+  /** Full playbook context text for all connected connectors */
+  allContext: string;
+  /** Map of connector ID → relevant sections text */
+  byConnector: Map<string, string>;
+};
+
 export const systemPrompt = ({
   requestHints,
   supportsTools,
+  playbookContext,
 }: {
   requestHints: RequestHints;
   supportsTools: boolean;
+  playbookContext?: PlaybookContext;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
 
@@ -76,7 +89,11 @@ export const systemPrompt = ({
     return `${regularPrompt}\n\n${requestPrompt}`;
   }
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}`;
+  const playbookSection = playbookContext?.allContext
+    ? `\n\n## Connector Playbooks (Operational Context)\n\n${playbookContext.allContext}\n\n---\n*When using connector tools, follow the anti-patterns and safeguards from the playbooks above. When in doubt, consult the playbook before making a tool call.*`
+    : "";
+
+  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}${playbookSection}`;
 };
 
 export const codePrompt = `

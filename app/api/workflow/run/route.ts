@@ -11,6 +11,11 @@
 import { getAvailableTools } from "@/lib/agent/inline-tools";
 import { DEFAULT_CHAT_MODEL } from "@/lib/ai/models";
 import { getLanguageModel } from "@/lib/ai/providers";
+import { initConnectors } from "@/lib/connectors/init";
+import {
+  buildAllPlaybooksContext,
+} from "@/lib/connectors/playbook-loader";
+import { checkConnectorEnv } from "@/lib/connectors/registry";
 import { sandboxTools } from "@/lib/sandbox/tools";
 
 export const maxDuration = 300; // 5 min max for workflow
@@ -33,6 +38,22 @@ export async function POST(req: Request) {
     ...getAvailableTools(),
     ...sandboxTools,
   };
+
+  // ── Playbook Auto-Load ──────────────────────────────────────────────
+  let playbookPrompt = "";
+  try {
+    initConnectors();
+    const { manifests } = await import("@/lib/connectors/init");
+    const connectedIds = manifests
+      .filter((m) => checkConnectorEnv(m.envKeys).ok)
+      .map((m) => m.id);
+    const ctx = buildAllPlaybooksContext(connectedIds);
+    if (ctx) {
+      playbookPrompt = `\n\n## Connector Playbooks (Operational Context)\n\n${ctx}\n\n---\n*When using connector tools, follow the anti-patterns and safeguards from the playbooks above.*`;
+    }
+  } catch (_) {
+    /* non-fatal */
+  }
 
   const model = getLanguageModel(modelId || DEFAULT_CHAT_MODEL);
 
@@ -66,7 +87,7 @@ You have access to all neptune tools including sandbox execution, V2 coding agen
 Slack integration, database queries, knowledge search, and file system operations.
 
 Complete the task thoroughly. If you encounter an error, try an alternative approach.
-Report your final result at the end.`,
+Report your final result at the end.${playbookPrompt}`,
           messages: [{ role: "user" as const, content: task }],
           tools: allTools,
         });

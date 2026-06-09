@@ -19,13 +19,19 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import { type PlaybookContext, type RequestHints, systemPrompt } from "@/lib/ai/prompts";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
 import { getWeather } from "@/lib/ai/tools/get-weather";
 import { requestSuggestions } from "@/lib/ai/tools/request-suggestions";
 import { updateDocument } from "@/lib/ai/tools/update-document";
+import { initConnectors } from "@/lib/connectors/init";
+import {
+  buildAllPlaybooksContext,
+  resolveConnectorFromTool,
+} from "@/lib/connectors/playbook-loader";
+import { checkConnectorEnv } from "@/lib/connectors/registry";
 import { isProductionEnvironment } from "@/lib/constants";
 import {
   createStreamId,
@@ -195,6 +201,26 @@ export async function POST(request: Request) {
       getMCPTools(),
     ]);
 
+    // ── Playbook Auto-Load ──────────────────────────────────────────────
+    // Load playbooks for all connected connectors and inject relevant
+    // sections (Operational Knowledge, Anti-Patterns, Safeguards, Common
+    // Workflows) into the system prompt so the AI has connector-specific
+    // context before making tool calls.
+    let playbookContext: PlaybookContext | undefined;
+    try {
+      initConnectors();
+      const { manifests } = await import("@/lib/connectors/init");
+      const connectedIds = manifests
+        .filter((m) => checkConnectorEnv(m.envKeys).ok)
+        .map((m) => m.id);
+      const allContext = buildAllPlaybooksContext(connectedIds);
+      if (allContext) {
+        playbookContext = { allContext, byConnector: new Map() };
+      }
+    } catch (_) {
+      // Playbook loading is non-fatal — degrade gracefully
+    }
+
     const modelMessages = await convertToModelMessages(uiMessages);
 
     const stream = createUIMessageStream({
@@ -202,7 +228,7 @@ export async function POST(request: Request) {
       execute: async ({ writer: dataStream }) => {
         const result = streamText({
           model: getLanguageModel(chatModel),
-          system: systemPrompt({ requestHints, supportsTools }),
+          system: systemPrompt({ requestHints, supportsTools, playbookContext }),
           messages: modelMessages,
           stopWhen: stepCountIs(20),
           // TypeScript can't infer dynamic tool names from getAvailableTools()/getMCPTools()
@@ -233,9 +259,10 @@ export async function POST(request: Request) {
                   "runScript",
                   "scrapeURL",
                   "processData",
-                  "runWorkflow",
                   "spawnPersistentSession",
                   "spawnCodingAgent",
+                  "createWorkflow",
+                  "updateWorkflow",
                   ...mcpToolNames,
                 ] as any),
           providerOptions: {
