@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "mcp-hub": {
+      "transport": "http",
+      "url": "https://mcp-hub.vercel.app/api",
+      "description": "Central MCP tool orchestration and discovery hub"
+    }
+  }
+}

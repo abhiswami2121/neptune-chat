@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "base44": {
+      "transport": "http",
+      "url": "https://app.base44.com/api/mcp",
+      "headers": {
+        "Authorization": "Bearer ${BASE44_API_KEY}"
+      },
+      "capabilities": {
+        "entities": 91,
+        "warehouse": "22 tables",
+        "reporting": "reportingHub"
+      }
+    }
+  }
+}

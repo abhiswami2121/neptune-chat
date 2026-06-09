@@ -20,7 +20,34 @@ const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
 const GITHUB_API = "https://api.github.com";
 const VERCEL_API = "https://api.vercel.com";
 const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
+const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID || "";
 const TEMPLATE_DIR = "/home/neptune/templates/nextjs-16-shadcn";
+
+// ─── Token Validation ─────────────────────────────────────────────────────
+
+interface TokenStatus {
+  configured: boolean;
+  missing: string[];
+}
+
+function checkTokens(mode: "modify_existing" | "new_project"): TokenStatus {
+  const missing: string[] = [];
+
+  if (mode === "modify_existing") {
+    if (!OPEN_AGENTS_API_KEY) missing.push("OPEN_AGENTS_API_KEY");
+  }
+
+  if (mode === "new_project") {
+    if (!GITHUB_TOKEN) missing.push("GITHUB_TOKEN");
+    if (!VERCEL_TOKEN) missing.push("VERCEL_TOKEN");
+    if (!VERCEL_TEAM_ID) missing.push("VERCEL_TEAM_ID");
+  }
+
+  return {
+    configured: missing.length === 0,
+    missing,
+  };
+}
 
 interface V2SandboxResponse {
   sandboxId: string;
@@ -319,6 +346,16 @@ export const spawnCodingAgent = tool({
   }),
   execute: async (params) => {
     const mode = params.mode || "modify_existing";
+
+    // Validate required tokens before attempting any operations
+    const tokenStatus = checkTokens(mode);
+    if (!tokenStatus.configured) {
+      throw new Error(
+        `Missing required environment variables for "${mode}" mode: ${tokenStatus.missing.join(", ")}. ` +
+        `Set these in your Vercel project environment variables (Settings → Environment Variables). ` +
+        `See .env.example for the full list.`
+      );
+    }
 
     // ── MODIFY_EXISTING — V2 Sandbox Handoff ──────────────────────────
     if (mode === "modify_existing") {

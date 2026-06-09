@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "slack": {
+      "transport": "http",
+      "url": "https://slack-mcp-bridge.base44.com/api",
+      "headers": {
+        "Authorization": "Bearer ${SLACK_BOT_TOKEN}"
+      },
+      "capabilities": {
+        "read": ["channel_history", "search_messages", "thread_replies", "list_users"],
+        "write": ["send_message", "add_reaction", "update_message"]
+      },
+      "channels": {
+        "jarvis-admin": "C0AQDDC3HAB",
+        "newleaf-admin": "C096PSS45Q9 (READ ONLY — never post)"
+      }
+    }
+  }
+}

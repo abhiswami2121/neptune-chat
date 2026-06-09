@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "neptune-v2": {
+      "transport": "http",
+      "url": "https://neptune-v2.vercel.app/api/mcp",
+      "description": "Neptune V2 coding agent handoff endpoint",
+      "endpoints": {
+        "create_task": "/api/tasks/create",
+        "task_status": "/api/tasks/{id}",
+        "list_tasks": "/api/tasks"
+      }
+    }
+  }
+}

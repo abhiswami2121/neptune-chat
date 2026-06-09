@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "neon-postgres": {
+      "command": "npx",
+      "args": ["-y", "@anthropic/mcp-neon"],
+      "env": {
+        "DATABASE_URL": "${NEON_DATABASE_URL}"
+      },
+      "mode": "read-only"
+    }
+  }
+}

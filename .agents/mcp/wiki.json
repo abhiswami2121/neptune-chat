@@ -1,0 +1,9 @@
+{
+  "mcpServers": {
+    "wiki-karpathy": {
+      "transport": "http",
+      "url": "https://wiki-karpathy.vercel.app/api/mcp",
+      "description": "Knowledge graph for PRDs, skills, and memory. 4,283+ nodes."
+    }
+  }
+}

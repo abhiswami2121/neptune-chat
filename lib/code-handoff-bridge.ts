@@ -14,6 +14,8 @@
 
 const V2_CHAT_ENDPOINT =
   process.env.NEPTUNE_V2_CHAT_URL || "https://neptune-v2.vercel.app/api/chat";
+const V2_TASKS_ENDPOINT =
+  process.env.NEPTUNE_V2_TASKS_URL || "https://neptune-v2.vercel.app/api/tasks/create";
 const V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
 
 export interface HandoffRequest {
@@ -101,6 +103,21 @@ export async function handoffToNeptuneCode(
       error: `V2 unreachable: ${message}`,
       degraded: true,
     };
+
+    // Best-effort: also record handoff in V2 /tasks store for /tasks page visibility
+    try {
+      await fetch(V2_TASKS_ENDPOINT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          source: "neptune-chat",
+          goal: request.prompt.slice(0, 200),
+          repo_url: request.context || "unknown",
+          chat_id: request.chatId,
+        }),
+        signal: AbortSignal.timeout(5000),
+      });
+    } catch { /* best-effort, don't block handoff */ }
   }
 }
 
