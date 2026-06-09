@@ -59,6 +59,8 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <head>
+        {/* Preconnect for Google Fonts (Geist + Geist Mono) */}
+        <link crossOrigin="anonymous" href="https://fonts.gstatic.com" rel="preconnect" />
         <script
           // biome-ignore lint/security/noDangerouslySetInnerHtml: "Required"
           dangerouslySetInnerHTML={{
@@ -67,6 +69,13 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
+        {/* Skip-to-content link for keyboard/assistive tech users */}
+        <a
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2 focus:bg-cyan-600 focus:text-white focus:rounded-lg focus:shadow-lg focus:outline-none"
+          href="#main-content"
+        >
+          Skip to content
+        </a>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"

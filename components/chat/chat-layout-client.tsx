@@ -73,6 +73,7 @@ function ChatLayoutInner({ user }: ChatLayoutClientProps) {
         <ResizablePanelGroup
           autoSave="neptune-chat-layout"
           className="!h-dvh"
+          id="main-content"
           orientation="horizontal"
         >
           {/* Chat area — always visible */}
