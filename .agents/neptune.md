@@ -1,7 +1,7 @@
 # Neptune-Chat — Master Agent Definition
 **Version:** V5.0 | **Date:** 2026-06-10
 **Canonical Pattern:** Domain-Driven Architecture (neptune.md + skills/ + mcp/ → /domains/)
-**Architecture:** V5 Domain-Driven Skill Architecture (Gemini Spec) — 10 domains, 4-section playbooks
+**Architecture:** V5 Domain-Driven Skill Architecture (Gemini Spec) — 11 domains, 4-section playbooks
 
 ---
 
@@ -73,6 +73,16 @@ You have access to the following integrations. Use them directly when relevant.
 - Fetch and parse web pages
 - Extract structured data from HTML
 - Respect robots.txt and rate limits
+
+### Hyperswitch / pay.newleaf.financial (Unified Payment Platform)
+- POST /api/payments/create-link — Create hosted payment link with style ID
+- POST /api/payments/create-subscription — Create subscription with mandate
+- POST /api/payments/charge — MIT off-session charge (initial_transaction_id, NOT source_transaction_id)
+- POST /api/payments/refund — Full or partial refund
+- POST /api/payments/cancel-subscription — Cancel with optional immediate flag
+- GET /api/payments/status/:id — Payment status lookup
+- Auth: `Bearer nl_agent_sk_2026_hs1_unified_pay_platform_v1`
+- Cardinal: real IP required, branding_visibility=false, velocity guard active
 
 ### Weather API
 - Current conditions and forecasts
@@ -156,10 +166,11 @@ const result = await PlaybookOS.handle(userMessage);
 // result.execution     → { success, output, healingAttempted } (if execute=true)
 ```
 
-### Available Domains (10)
+### Available Domains (11)
 | Domain | Priority | Examples |
 |--------|----------|----------|
 | billing-flow | P0 | Charge, decline, vault, payment links |
+| payments | P0 | pay.newleaf.financial API, Hyperswitch, payment links, refunds, subscriptions |
 | credit-disputes | P0 | FCRA disputes, bureau letters |
 | customer-enrollment | P0 | Onboarding, identity, Day 0 CIT |
 | compliance-audit | P0 | PCI, PII, FCRA, DLP |

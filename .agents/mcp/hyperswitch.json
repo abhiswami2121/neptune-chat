@@ -1,0 +1,37 @@
+{
+  "mcpServers": {
+    "hyperswitch": {
+      "transport": "http",
+      "url": "https://pay.newleaf.financial/api/payments",
+      "headers": {
+        "Authorization": "Bearer nl_agent_sk_2026_hs1_unified_pay_platform_v1",
+        "Content-Type": "application/json"
+      },
+      "capabilities": {
+        "endpoints": {
+          "create-link": "POST /api/payments/create-link — Hosted payment link with style ID",
+          "create-subscription": "POST /api/payments/create-subscription — Subscription with mandate",
+          "charge": "POST /api/payments/charge — MIT off-session charge",
+          "refund": "POST /api/payments/refund — Full or partial refund",
+          "cancel-subscription": "POST /api/payments/cancel-subscription — Cancel subscription",
+          "payment-status": "GET /api/payments/status/:id — Payment status"
+        },
+        "styles": [
+          "newleaf-one-time",
+          "newleaf-recovery",
+          "newleaf-sub-signup",
+          "newleaf-upgrade",
+          "newleaf-resume"
+        ],
+        "cardinal_rules": [
+          "api-key header for Hyperswitch (NOT X-Api-Key)",
+          "initial_transaction_id for MIT (NOT source_transaction_id)",
+          "stored_credential_indicator=used (NOT stored)",
+          "Real customer IP in customer_acceptance",
+          "branding_visibility=false on all payment pages",
+          "Velocity guard: 3+ MIT failures/24h → BLOCK"
+        ]
+      }
+    }
+  }
+}
