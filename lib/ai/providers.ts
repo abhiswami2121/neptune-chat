@@ -53,9 +53,19 @@ export function getLanguageModel(modelId: string) {
   }
 
   // Direct DeepSeek models → user's own API key, NO gateway
+  // Graceful fallback: if DEEPSEEK_API_KEY is not configured, route through Gateway
   if (DIRECT_DEEPSEEK_IDS.has(modelId)) {
-    const apiModelName = DEEPSEEK_MODEL_MAP[modelId];
-    return getDeepSeekDirect().chatModel(apiModelName);
+    if (process.env.DEEPSEEK_API_KEY) {
+      const apiModelName = DEEPSEEK_MODEL_MAP[modelId];
+      return getDeepSeekDirect().chatModel(apiModelName);
+    }
+    // No direct key — fall through to Gateway with best-effort model mapping
+    console.warn(
+      `[providers] DEEPSEEK_API_KEY not set — falling back to Gateway for "${modelId}". ` +
+      `Set DEEPSEEK_API_KEY in Vercel env for direct routing.`
+    );
+    const gatewayModelId = modelId.startsWith("deepseek/") ? modelId : `deepseek/${modelId}`;
+    return gateway.languageModel(gatewayModelId);
   }
 
   // Everything else → Vercel AI Gateway (needs AI_GATEWAY_API_KEY)

@@ -1,4 +1,4 @@
-export const DEFAULT_CHAT_MODEL = "deepseek-v4-pro";
+export const DEFAULT_CHAT_MODEL = "deepseek/deepseek-v4-pro";
 
 export const titleModel = {
   id: "moonshotai/kimi-k2.5",
@@ -28,17 +28,18 @@ export type ChatModel = {
 export const chatModels: ChatModel[] = [
   // ═══════════════════════════════════════════════════════════════════
   // DIRECT — user's own API keys, NO Vercel AI Gateway dependency
+  // Falls back gracefully to Gateway if DEEPSEEK_API_KEY is not set.
   // ═══════════════════════════════════════════════════════════════════
   {
     id: "deepseek-v4-pro",
-    name: "DeepSeek V4 Pro",
+    name: "DeepSeek V4 Pro (Direct)",
     provider: "deepseek",
-    description: "Default — your direct API key",
+    description: "Your own DeepSeek API key — bypasses Gateway",
     routeType: "direct",
   },
   {
     id: "deepseek-reasoner",
-    name: "DeepSeek R1",
+    name: "DeepSeek R1 (Direct)",
     provider: "deepseek",
     description: "Deep reasoning model via direct key",
     routeType: "direct",
@@ -48,11 +49,27 @@ export const chatModels: ChatModel[] = [
   // GATEWAY — routed through Vercel AI Gateway (needs AI_GATEWAY_API_KEY)
   // ═══════════════════════════════════════════════════════════════════
   {
+    id: "deepseek/deepseek-v4-pro",
+    name: "DeepSeek V4 Pro",
+    provider: "deepseek",
+    description: "Default — latest DeepSeek flagship through Vercel AI Gateway",
+    gatewayOrder: ["deepseek"],
+    routeType: "gateway",
+  },
+  {
     id: "deepseek/deepseek-v3.2",
     name: "DeepSeek V3.2",
     provider: "deepseek",
     description: "Fast and capable with tool use",
     gatewayOrder: ["bedrock", "deepinfra"],
+    routeType: "gateway",
+  },
+  {
+    id: "deepseek/deepseek-v4-flash",
+    name: "DeepSeek V4 Flash",
+    provider: "deepseek",
+    description: "Faster V4 variant with reasoning + vision",
+    gatewayOrder: ["deepseek"],
     routeType: "gateway",
   },
   {
