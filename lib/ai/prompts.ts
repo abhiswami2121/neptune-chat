@@ -1,5 +1,6 @@
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
+import { buildConnectorCatalogPrompt } from "@/lib/connectors/catalog";
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
@@ -93,7 +94,10 @@ export const systemPrompt = ({
     ? `\n\n## Connector Playbooks (Operational Context)\n\n${playbookContext.allContext}\n\n---\n*When using connector tools, follow the anti-patterns and safeguards from the playbooks above. When in doubt, consult the playbook before making a tool call.*`
     : "";
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}${playbookSection}`;
+  // Dynamic connector catalog — tells the agent what integrations are available
+  const connectorCatalog = buildConnectorCatalogPrompt();
+
+  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
 };
 
 export const codePrompt = `

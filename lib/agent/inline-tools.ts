@@ -895,6 +895,54 @@ export const controlV2Session = tool({
   },
 });
 
+// ── Category 5: Integration Discovery ───────────────────────────────────
+
+export const listIntegrations = tool({
+  description:
+    "List ALL available integrations/connectors that Neptune Chat has access to. Returns connector name, status, tool count, tool names, and playbook references. Use this whenever the user asks 'what integrations do you have', 'list your integrations', 'what can you connect to', or similar. There are 13 connectors: nmi, hyperswitch, slack, github, linear, forth, vapi, ghl, base44, vercel, mcp-hub, wiki, affy.",
+  inputSchema: z.object({
+    filter: z
+      .enum(["all", "connected", "configured", "disconnected"])
+      .optional()
+      .default("all")
+      .describe("Filter connectors by status"),
+  }),
+  execute: async ({ filter }) => {
+    try {
+      const { getIntegrationSummaries } = await import(
+        "@/lib/connectors/catalog"
+      );
+      const all = getIntegrationSummaries();
+
+      const filtered =
+        filter === "all"
+          ? all
+          : all.filter((s) => s.status === filter);
+
+      return {
+        total: all.length,
+        connected: all.filter((s) => s.status === "connected").length,
+        configured: all.filter((s) => s.status === "configured").length,
+        disconnected: all.filter((s) => s.status === "disconnected").length,
+        integrations: filtered.map((s) => ({
+          name: s.name,
+          id: s.id,
+          status: s.status,
+          tools: s.tools,
+          toolNames: s.toolNames,
+          description: s.description,
+          playbook: s.playbook,
+        })),
+        fullList: all.map((s) => s.name),
+      };
+    } catch (err) {
+      return {
+        error: `Failed to list integrations: ${err instanceof Error ? err.message : "Unknown"}`,
+      };
+    }
+  },
+});
+
 // ── Tool Registry ────────────────────────────────────────────────────────
 
 /** All inline tools available to the agent, keyed by name. */
@@ -918,6 +966,8 @@ export const inlineTools = {
   postV2Session,
   streamV2Progress,
   controlV2Session,
+  // Integration Discovery
+  listIntegrations,
 };
 
 /** Map of which tools require which env vars to function. */
@@ -937,6 +987,7 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
   postV2Session: [],
   streamV2Progress: [],
   controlV2Session: [],
+  listIntegrations: [],
 };
 
 /**

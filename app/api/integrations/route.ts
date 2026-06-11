@@ -1,28 +1,33 @@
+/**
+ * GET /api/integrations — dynamic connector listing from the registry.
+ * Returns ALL 13 connectors with status, tools, playbook references.
+ */
 import { NextResponse } from "next/server";
+import { getIntegrationSummaries } from "@/lib/connectors/catalog";
 
 export async function GET() {
-  const integrations = [
-    { name: "Slack", status: "connected", tools: 5, icon: "slack" },
-    { name: "NMI", status: "connected", tools: 4, icon: "credit-card" },
-    { name: "Base44", status: "connected", tools: 4, icon: "database" },
-    { name: "Linear", status: "connected", tools: 1, icon: "list" },
-    { name: "Forth DPP", status: "pending", tools: 0, icon: "file-text" },
-    { name: "GitHub MCP", status: "not-configured", tools: 0, icon: "github" },
-    {
-      name: "Filesystem MCP",
-      status: "not-configured",
-      tools: 0,
-      icon: "folder",
-    },
-    {
-      name: "Brave Search MCP",
-      status: "not-configured",
-      tools: 0,
-      icon: "search",
-    },
-  ];
+  const summaries = getIntegrationSummaries();
+
+  const connected = summaries.filter((s) => s.status === "connected");
+  const configured = summaries.filter((s) => s.status === "configured");
+  const disconnected = summaries.filter((s) => s.status === "disconnected");
+
   return NextResponse.json({
-    integrations,
-    vpsBridgeUrl: "https://187.127.250.171:8400",
+    total: summaries.length,
+    connected: connected.length,
+    configured: configured.length,
+    disconnected: disconnected.length,
+    integrations: summaries.map((s) => ({
+      name: s.name,
+      id: s.id,
+      status: s.status,
+      tools: s.tools,
+      toolNames: s.toolNames,
+      description: s.description,
+      playbook: s.playbook,
+      brandColor: s.brandColor,
+      details: s.details,
+    })),
+    fullList: summaries.map((s) => s.name),
   });
 }

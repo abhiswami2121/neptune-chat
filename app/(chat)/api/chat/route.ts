@@ -236,6 +236,7 @@ export async function POST(request: Request) {
                   "searchKnowledge",
                   "queryDatabase",
                   "pullSlackMessages",
+                  "listIntegrations",
                   "fetchURL",
                   "runWorkflow",
                   "listV2Sessions",
