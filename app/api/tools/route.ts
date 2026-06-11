@@ -23,6 +23,12 @@ export async function GET() {
       description: "Search knowledge graph",
     },
     {
+      name: "loadSkill",
+      category: "knowledge",
+      description:
+        "Load detailed skill content on-demand. Use for specific connector, playbook, or capability details. Categories: connectors/, capabilities/, organizations/<org>/<domain>/.",
+    },
+    {
       name: "queryDatabase",
       category: "data",
       description: "Query the database",
