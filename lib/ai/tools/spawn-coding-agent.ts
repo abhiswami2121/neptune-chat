@@ -13,6 +13,7 @@ import { z } from "zod";
 import { readFile } from "fs/promises";
 import path from "path";
 import { handoffToV2 } from "@/lib/v2/bridge";
+import { safeToolCall, toolError, type StructuredToolResult } from "@/lib/v2/retry";
 
 const OPEN_AGENTS_URL =
   process.env.OPEN_AGENTS_URL || "https://neptune-v2.vercel.app";
@@ -238,7 +239,8 @@ async function createVercelProject(params: {
 
 async function pollDeployReady(
   projectId: string,
-  maxWaitMs: number = 120000
+  maxWaitMs: number = 120000,
+  onProgress?: (state: string, elapsedMs: number) => void
 ): Promise<{ url: string | null; state: string }> {
   const start = Date.now();
 
@@ -248,6 +250,7 @@ async function pollDeployReady(
       { headers: vercelHeaders() }
     );
     if (!res.ok) {
+      onProgress?.("checking", Date.now() - start);
       await new Promise((r) => setTimeout(r, 3000));
       continue;
     }
@@ -257,9 +260,13 @@ async function pollDeployReady(
     };
     const latest = data.deployments?.[0];
     if (!latest) {
+      onProgress?.("queued", Date.now() - start);
       await new Promise((r) => setTimeout(r, 3000));
       continue;
     }
+
+    // U1.2: Send progress event every poll cycle (prevents client thinking stream died)
+    onProgress?.(latest.state, Date.now() - start);
 
     if (latest.state === "READY") {
       return { url: latest.url, state: "READY" };
@@ -348,16 +355,21 @@ export const spawnCodingAgent = tool({
       .describe("Existing v2 session ID to resume"),
   }),
   execute: async (params) => {
+    try {
     const mode = params.mode || "modify_existing";
 
     // Validate required tokens before attempting any operations
     const tokenStatus = checkTokens(mode);
     if (!tokenStatus.configured) {
-      throw new Error(
-        `Missing required environment variables for "${mode}" mode: ${tokenStatus.missing.join(", ")}. ` +
-        `Set these in your Vercel project environment variables (Settings → Environment Variables). ` +
-        `See .env.example for the full list.`
-      );
+      return {
+        success: false,
+        error: {
+          code: "MISSING_TOKENS",
+          message: `Missing required environment variables for "${mode}" mode: ${tokenStatus.missing.join(", ")}`,
+          retryable: false,
+          suggestion: `Set these in your Vercel project environment variables (Settings → Environment Variables). See .env.example for the full list.`,
+        },
+      };
     }
 
     // ── MODIFY_EXISTING — V2 Handoff via Bridge ────────────────────────
@@ -365,7 +377,15 @@ export const spawnCodingAgent = tool({
       const { goal, repoOwner, repoName, baseBranch, createPR, deployToVercel, runtime, sessionId } = params;
 
       if (!repoName) {
-        throw new Error("repoName is required for modify_existing mode");
+        return {
+          success: false,
+          error: {
+            code: "MISSING_PARAM",
+            message: "repoName is required for modify_existing mode",
+            retryable: false,
+            suggestion: "Provide the target repository name.",
+          },
+        };
       }
 
       // Use the V2 bridge (handoffToV2) which sends via /api/chat with correct auth
@@ -382,12 +402,30 @@ export const spawnCodingAgent = tool({
       const handoffResult = await handoffToV2(goal, context, "deepseek-v4-pro");
 
       if (!handoffResult.success) {
-        throw new Error(
-          `V2 handoff failed: ${handoffResult.error || "Unknown error"}`
-        );
+        // Determine if retryable (timeout, network, 503)
+        const isRetryable =
+          handoffResult.error?.includes("timeout") ||
+          handoffResult.error?.includes("503") ||
+          handoffResult.error?.includes("502") ||
+          handoffResult.error?.includes("unreachable") ||
+          handoffResult.error?.includes("ECONNREFUSED") ||
+          handoffResult.error?.includes("AbortError");
+
+        return {
+          success: false,
+          error: {
+            code: "V2_HANDOFF_FAILED",
+            message: handoffResult.error || "Unknown error",
+            retryable: !!isRetryable,
+            suggestion: isRetryable
+              ? "V2 is temporarily unreachable. You can retry in a few seconds, or use direct sandbox tools instead."
+              : "V2 handoff is not available. Try using direct sandbox tools or manually creating the changes.",
+          },
+        };
       }
 
       return {
+        success: true,
         mode: "modify_existing",
         sandboxId: handoffResult.sessionId,
         sessionId: handoffResult.sessionId,
@@ -433,6 +471,7 @@ export const spawnCodingAgent = tool({
     );
 
     // 1. Create GitHub repo
+    try {
     const repo = await createGitHubRepo({
       name: safeProjectName,
       description: safeDescription,
@@ -493,8 +532,18 @@ export const spawnCodingAgent = tool({
         `[spawnCodingAgent] Vercel project created: ${vercelProjectId} — ${vercelProject.link}`
       );
 
-      // 4. Poll for first deploy (Vercel auto-deploys on git push)
-      const deployResult = await pollDeployReady(vercelProjectId);
+      // 4. Poll for first deploy with progress (U1.2: prevents client thinking stream died)
+      const deployResult = await pollDeployReady(
+        vercelProjectId,
+        120000,
+        (state, elapsed) => {
+          if (elapsed % 15000 < 5000) {
+            console.log(
+              `[spawnCodingAgent] Deploy status: ${state} after ${Math.round(elapsed / 1000)}s`
+            );
+          }
+        }
+      );
       deploymentUrl = deployResult.url
         ? `https://${deployResult.url}`
         : null;
@@ -505,16 +554,13 @@ export const spawnCodingAgent = tool({
       );
     }
 
-    const result: NewProjectResult = {
+    return {
+      success: true,
+      mode: "new_project",
       repoUrl: repo.htmlUrl,
       vercelProjectId,
       deploymentUrl,
       projectName: safeProjectName,
-    };
-
-    return {
-      mode: "new_project",
-      ...result,
       message:
         `New project "${safeTitle}" created!\n` +
         `📁 GitHub: ${repo.htmlUrl}\n` +
@@ -522,5 +568,48 @@ export const spawnCodingAgent = tool({
           ? `🚀 Vercel: ${deploymentUrl || "deploying..."}`
           : `⚠️ Vercel project creation failed — deploy manually at ${repo.htmlUrl}`),
     };
+    } catch (ghErr) {
+      return {
+        success: false,
+        error: {
+          code: "NEW_PROJECT_FAILED",
+          message: ghErr instanceof Error ? ghErr.message : String(ghErr),
+          retryable: true,
+          suggestion: "GitHub repo creation or template upload failed. Check GitHub token permissions and try again.",
+        },
+      };
+    }
+
+    // ── Unexpected mode — should not happen with zod validation ──────
+    return {
+      success: false,
+      error: {
+        code: "INVALID_MODE",
+        message: `Invalid mode: ${params.mode || "undefined"}`,
+        retryable: false,
+        suggestion: "Use 'modify_existing' or 'new_project'.",
+      },
+    };
+    } catch (err) {
+      // U1.2: Outer safety net — tool NEVER throws unhandled
+      const message = err instanceof Error ? err.message : String(err);
+      const isRetryable =
+        message.includes("timeout") ||
+        message.includes("abort") ||
+        message.includes("fetch") ||
+        message.includes("ECONNREFUSED") ||
+        message.includes("503");
+      return {
+        success: false,
+        error: {
+          code: "UNHANDLED_ERROR",
+          message,
+          retryable: isRetryable,
+          suggestion: isRetryable
+            ? "A transient error occurred. Try again or use direct sandbox tools."
+            : "An unexpected error occurred. Check the error details and try a different approach.",
+        },
+      };
+    }
   },
 });

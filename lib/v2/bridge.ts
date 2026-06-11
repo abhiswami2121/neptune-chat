@@ -6,6 +6,9 @@
  * Chat → V2 (handoff):     handoffToV2()  — POST /api/sessions
  * Chat ← V2 (read state):  listV2Sessions(), getV2Session(), streamV2Progress()
  * Chat → V2 (control):     controlV2Session() — pause/resume/cancel
+ *
+ * U1.2: handoffToV2 now includes auto-retry (1 retry with 2s backoff).
+ * U1.2: All functions return structured results, never throw unhandled.
  */
 
 // ── Configuration ────────────────────────────────────────────────────────
@@ -17,6 +20,7 @@ const NEPTUNE_V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
 const NEPTUNE_INTERNAL_TOKEN = process.env.NEPTUNE_INTERNAL_TOKEN || "";
 
 const DEFAULT_TIMEOUT = 15_000;
+const V2_HANDOFF_TIMEOUT = 60_000; // U1.2: 60s max for V2 handoff
 const V2_CHAT_ENDPOINT = `${NEPTUNE_V2_URL}/api/chat`;
 
 // ── Types ────────────────────────────────────────────────────────────────
@@ -105,6 +109,9 @@ async function fetchWithTimeout(
  * Hand off a coding task to Neptune V2 via /api/chat.
  * V2 uses chatId as the session identifier; the SSE stream is consumed
  * by the calling API route.
+ *
+ * U1.2: Auto-retry — first failure retries once with 2s backoff.
+ * Second failure returns structured error.
  */
 export async function handoffToV2(
   prompt: string,
@@ -112,75 +119,99 @@ export async function handoffToV2(
   model?: string
 ): Promise<V2HandoffResult> {
   const chatId = `handoff-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-  try {
-    const res = await fetchWithTimeout(
-      V2_CHAT_ENDPOINT,
-      {
-        method: "POST",
-        headers: authHeaders(),
-        body: JSON.stringify({
-          messages: [
-            {
-              role: "user",
-              content: context
-                ? `${context}\n\n---\n\n${prompt}`
-                : prompt,
-            },
-          ],
-          chatId,
-          model: model ?? "deepseek-v4-pro",
-          source: "neptune-chat",
-          mode: "chat",
-        }),
-      },
-      20_000
-    );
 
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      return {
-        success: false,
-        error: `V2 returned ${res.status}: ${body.slice(0, 200)}`,
-      };
-    }
+  const attempt = async (): Promise<V2HandoffResult> => {
+    try {
+      const res = await fetchWithTimeout(
+        V2_CHAT_ENDPOINT,
+        {
+          method: "POST",
+          headers: authHeaders(),
+          body: JSON.stringify({
+            messages: [
+              {
+                role: "user",
+                content: context
+                  ? `${context}\n\n---\n\n${prompt}`
+                  : prompt,
+              },
+            ],
+            chatId,
+            model: model ?? "deepseek-v4-pro",
+            source: "neptune-chat",
+            mode: "chat",
+          }),
+        },
+        V2_HANDOFF_TIMEOUT
+      );
 
-    // V2 returns SSE stream — read first event to confirm session started
-    const contentType = res.headers.get("content-type") ?? "";
-    if (contentType.includes("text/event-stream") && res.body) {
-      const reader = res.body.getReader();
-      let sessionStarted = false;
-      // Read first few SSE events to confirm connection
-      for (let i = 0; i < 5; i++) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        const text = new TextDecoder().decode(value);
-        if (text.includes('"type":"start"') || text.includes('"type":"start-step"')) {
-          sessionStarted = true;
-          break;
-        }
-      }
-      reader.cancel(); // Don't consume full stream from bridge
-      if (!sessionStarted) {
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
         return {
           success: false,
-          error: "V2 session did not start — no start event in SSE stream",
+          error: `V2 returned ${res.status}: ${body.slice(0, 200)}`,
         };
       }
-    }
 
-    // Use chatId as sessionId (V2 identifies sessions by chatId)
-    return {
-      success: true,
-      sessionId: chatId,
-      sessionUrl: `${NEPTUNE_V2_URL}/chat/${chatId}`,
-      sseUrl: V2_CHAT_ENDPOINT,
-    };
-  } catch (err) {
-    return {
-      success: false,
-      error: `V2 handoff failed: ${err instanceof Error ? err.message : "Unknown"}`,
-    };
-  }
+      // V2 returns SSE stream — read first event to confirm session started
+      const contentType = res.headers.get("content-type") ?? "";
+      if (contentType.includes("text/event-stream") && res.body) {
+        const reader = res.body.getReader();
+        let sessionStarted = false;
+        // Read first few SSE events to confirm connection
+        for (let i = 0; i < 5; i++) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          const text = new TextDecoder().decode(value);
+          if (text.includes('"type":"start"') || text.includes('"type":"start-step"')) {
+            sessionStarted = true;
+            break;
+          }
+        }
+        reader.cancel(); // Don't consume full stream from bridge
+        if (!sessionStarted) {
+          return {
+            success: false,
+            error: "V2 session did not start — no start event in SSE stream",
+          };
+        }
+      }
+
+      // Use chatId as sessionId (V2 identifies sessions by chatId)
+      return {
+        success: true,
+        sessionId: chatId,
+        sessionUrl: `${NEPTUNE_V2_URL}/chat/${chatId}`,
+        sseUrl: V2_CHAT_ENDPOINT,
+      };
+    } catch (err) {
+      return {
+        success: false,
+        error: `V2 handoff failed: ${err instanceof Error ? err.message : "Unknown"}`,
+      };
+    }
+  };
+
+  // U1.2: Auto-retry — first attempt fails, retry once with 2s backoff
+  const firstAttempt = await attempt();
+  if (firstAttempt.success) return firstAttempt;
+
+  // Only retry on transient errors (timeout, network, 503, 502)
+  const errorMsg = firstAttempt.error || "";
+  const isRetryable =
+    errorMsg.includes("timeout") ||
+    errorMsg.includes("abort") ||
+    errorMsg.includes("fetch") ||
+    errorMsg.includes("ECONNREFUSED") ||
+    errorMsg.includes("503") ||
+    errorMsg.includes("502") ||
+    errorMsg.includes("unreachable");
+
+  if (!isRetryable) return firstAttempt;
+
+  // Wait 2s then retry
+  await new Promise((r) => setTimeout(r, 2000));
+  return attempt();
 }
 
 /**

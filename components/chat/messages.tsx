@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { useDataStream } from "./data-stream-provider";
 import { Greeting } from "./greeting";
 import { PreviewMessage, ThinkingMessage } from "./message";
+import { StreamErrorBoundary } from "./stream-error-boundary";
 
 type MessagesProps = {
   addToolApprovalResponse: UseChatHelpers<ChatMessage>["addToolApprovalResponse"];
@@ -72,25 +73,31 @@ function PureMessages({
         )}
       >
         {messages.map((message, index) => (
-          <PreviewMessage
-            addToolApprovalResponse={addToolApprovalResponse}
-            chatId={chatId}
-            isLoading={status === "streaming" && messages.length - 1 === index}
-            isReadonly={isReadonly}
+          <StreamErrorBoundary
             key={message.id}
-            message={message}
-            onEdit={onEditMessage}
-            regenerate={regenerate}
-            requiresScrollPadding={
-              hasSentMessage && index === messages.length - 1
-            }
-            setMessages={setMessages}
-            vote={
-              votes
-                ? votes.find((vote) => vote.messageId === message.id)
-                : undefined
-            }
-          />
+            onRetry={() => {
+              // Re-render by resetting error state
+            }}
+          >
+            <PreviewMessage
+              addToolApprovalResponse={addToolApprovalResponse}
+              chatId={chatId}
+              isLoading={status === "streaming" && messages.length - 1 === index}
+              isReadonly={isReadonly}
+              message={message}
+              onEdit={onEditMessage}
+              regenerate={regenerate}
+              requiresScrollPadding={
+                hasSentMessage && index === messages.length - 1
+              }
+              setMessages={setMessages}
+              vote={
+                votes
+                  ? votes.find((vote) => vote.messageId === message.id)
+                  : undefined
+              }
+            />
+          </StreamErrorBoundary>
         ))}
 
         {status === "submitted" && messages.at(-1)?.role !== "assistant" && (
