@@ -18,6 +18,7 @@ import {
   updateWorkflow,
 } from "@/lib/ai/tools/create-workflow";
 import { selfCode } from "@/lib/ai/tools/self-code";
+import { loadSkill } from "@/lib/ai/tools/load-skill";
 
 // ── Configuration ────────────────────────────────────────────────────────
 
@@ -954,6 +955,7 @@ export const inlineTools = {
   readPRD,
   listSkills,
   searchKnowledge,
+  loadSkill,
   // Data
   queryDatabase,
   pullSlackMessages,
@@ -980,6 +982,7 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
   readPRD: ["VPS_FS_BRIDGE_URL"],
   listSkills: ["VPS_FS_BRIDGE_URL"],
   searchKnowledge: ["VPS_FS_BRIDGE_URL"],
+  loadSkill: ["VPS_FS_BRIDGE_URL"],
   queryDatabase: ["POSTGRES_URL"],
   pullSlackMessages: ["SLACK_BOT_TOKEN"],
   fetchURL: [],

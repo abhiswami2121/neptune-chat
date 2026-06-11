@@ -1,0 +1,271 @@
+/**
+ * load-skill.ts — On-demand skill loading tool (U2 Progressive Disclosure foundation).
+ *
+ * Pattern A architecture: instead of stuffing 400+ tools in the tools array,
+ * use ~5 gatekeeper tools. load_skill is one of them — it reads detailed
+ * skill/playbook content from the file system on demand.
+ *
+ * This keeps the agent context efficient: only load what's needed, when needed.
+ *
+ * Supported paths:
+ *   connectors/<name>     → reads connector playbook and tool docs
+ *   capabilities/<name>   → reads capability playbook
+ *   organizations/<org>/<domain> → reads org-specific playbook
+ *   skills/<name>         → reads general skill file
+ */
+import { tool } from "ai";
+import { z } from "zod";
+import { secrets } from "@/secrets";
+
+const VPS_FS_URL = secrets.vps.fsBridgeUrl || "https://187.127.250.171:8102/api/fs";
+
+// ── FS Bridge Helpers ────────────────────────────────────────────────────────
+
+interface FsReadResult {
+  success: boolean;
+  content?: string;
+  path?: string;
+  error?: string;
+}
+
+interface FsListResult {
+  success: boolean;
+  files?: Array<{ name: string; path: string; size: number }>;
+  error?: string;
+}
+
+async function vpsFsRead(fsPath: string): Promise<FsReadResult> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(`${VPS_FS_URL}/read`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ path: fsPath }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      return { success: false, error: `Bridge returned ${res.status}` };
+    }
+
+    const data = await res.json();
+    return { success: true, content: data.content, path: data.path };
+  } catch (err) {
+    return {
+      success: false,
+      error: `VPS bridge unavailable: ${err instanceof Error ? err.message : "Unknown"}`,
+    };
+  }
+}
+
+async function vpsFsList(parentPath: string): Promise<FsListResult> {
+  try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    const res = await fetch(`${VPS_FS_URL}/list`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ parentPath }),
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
+
+    if (!res.ok) {
+      return { success: false, error: `Bridge returned ${res.status}` };
+    }
+
+    const data = await res.json();
+    return { success: true, files: data.files ?? data };
+  } catch (err) {
+    return {
+      success: false,
+      error: `VPS bridge unavailable: ${err instanceof Error ? err.message : "Unknown"}`,
+    };
+  }
+}
+
+// ── Skill Path Resolution ────────────────────────────────────────────────────
+
+interface SkillContent {
+  name: string;
+  description: string;
+  content: string;
+  tools_available: string[];
+  sources: string[];
+}
+
+function parseSkillMarkdown(content: string): { description: string } {
+  // Extract first paragraph or heading as description
+  const lines = content.split("\n");
+  let description = "";
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (trimmed.startsWith("#")) {
+      description = trimmed.replace(/^#+\s*/, "");
+      break;
+    }
+    if (trimmed && !trimmed.startsWith("---")) {
+      description = trimmed.slice(0, 200);
+      break;
+    }
+  }
+  return { description: description || "No description available" };
+}
+
+function extractToolsAvailable(content: string): string[] {
+  // Look for function/tool names in the skill content
+  const tools: string[] = [];
+  const toolMatch = content.match(/## Tools[\s\S]*?(?=## |$)/i);
+  if (toolMatch) {
+    const toolSection = toolMatch[0];
+    const funcMatches = toolSection.matchAll(/[`'](\w+)[`']/g);
+    for (const m of funcMatches) {
+      if (!tools.includes(m[1])) tools.push(m[1]);
+    }
+  }
+  return tools.slice(0, 20);
+}
+
+/**
+ * Resolve a skill_path into one or more file system paths to read.
+ *
+ * Path conventions:
+ *   connectors/<name>        → jarvis/cortex/skills/<name>-connector*.md + connectors/<name>/SKILL.md
+ *   capabilities/<name>      → jarvis/cortex/skills/<name>*.md
+ *   organizations/<org>/<d>  → jarvis/cortex/organizations/<org>/<domain>/*.md
+ *   skills/<name>            → jarvis/cortex/skills/<name>.md
+ *   <bare name>              → tries jarvis/cortex/skills/<name>.md
+ */
+function resolveSkillPaths(skillPath: string): string[] {
+  const normalized = skillPath.replace(/^\/+|\/+$/g, "");
+
+  if (normalized.startsWith("connectors/")) {
+    const name = normalized.replace("connectors/", "");
+    return [
+      `jarvis/cortex/connectors/${name}/SKILL.md`,
+      `jarvis/cortex/connectors/${name}/playbook.md`,
+      `jarvis/cortex/skills/${name}-connector.md`,
+      `jarvis/cortex/skills/${name}.md`,
+    ];
+  }
+
+  if (normalized.startsWith("organizations/")) {
+    const parts = normalized.split("/");
+    const org = parts[1];
+    const domain = parts.slice(2).join("/");
+    return [
+      `jarvis/cortex/organizations/${org}/${domain}/SKILL.md`,
+      `jarvis/cortex/organizations/${org}/${domain}/playbook.md`,
+      `jarvis/cortex/organizations/${org}/${domain}/README.md`,
+    ];
+  }
+
+  if (normalized.startsWith("capabilities/")) {
+    const name = normalized.replace("capabilities/", "");
+    return [
+      `jarvis/cortex/skills/${name}.md`,
+      `jarvis/cortex/capabilities/${name}/SKILL.md`,
+    ];
+  }
+
+  if (normalized.startsWith("skills/")) {
+    const name = normalized.replace("skills/", "");
+    return [`jarvis/cortex/skills/${name}.md`];
+  }
+
+  // Bare name — try skills directory
+  return [
+    `jarvis/cortex/skills/${normalized}.md`,
+    `jarvis/cortex/skills/${normalized}-skill.md`,
+    `jarvis/prd/${normalized}.md`,
+  ];
+}
+
+// ── Main Tool ────────────────────────────────────────────────────────────────
+
+export const loadSkill = tool({
+  description:
+    "Load detailed skill content on-demand from the knowledge base. " +
+    "Use when you need specific connector, playbook, or capability details. " +
+    "Categories: connectors/ (NMI, Slack, GitHub, Vercel, etc.), " +
+    "capabilities/ (self-coding, sandbox, etc.), " +
+    "organizations/<org>/<domain>/ (org-specific playbooks). " +
+    "Keeps context efficient — only load what you need, when you need it.",
+  inputSchema: z.object({
+    skill_path: z
+      .string()
+      .describe(
+        "Skill path to load. Examples: 'connectors/slack', 'capabilities/self-coding', " +
+        "'skills/billing-flow-retry', 'connectors/nmi', 'organizations/newleaf-financial/customer-support'. " +
+        "Bare names like 'slack' are resolved to the best matching skill file."
+      ),
+  }),
+  execute: async ({ skill_path }) => {
+    const paths = resolveSkillPaths(skill_path);
+
+    const results: SkillContent = {
+      name: skill_path,
+      description: "",
+      content: "",
+      tools_available: [],
+      sources: [],
+    };
+
+    let foundAny = false;
+
+    for (const fsPath of paths) {
+      const result = await vpsFsRead(fsPath);
+      if (result.success && result.content) {
+        foundAny = true;
+        const { description } = parseSkillMarkdown(result.content);
+        const tools = extractToolsAvailable(result.content);
+
+        if (!results.description && description) {
+          results.description = description;
+        }
+        results.content += (results.content ? "\n\n---\n\n" : "") + result.content;
+        results.tools_available = [
+          ...new Set([...results.tools_available, ...tools]),
+        ];
+        results.sources.push(fsPath);
+      }
+    }
+
+    if (!foundAny) {
+      // Try listing the skills directory to give the user context on what's available
+      const skillsList = await vpsFsList("jarvis/cortex/skills");
+      const availableSkills = skillsList.success && skillsList.files
+        ? skillsList.files.slice(0, 30).map((f) => f.name.replace(".md", ""))
+        : [];
+
+      return {
+        skill_path,
+        loaded: false,
+        error: `Skill "${skill_path}" not found. Tried paths: ${paths.join(", ")}. VPS bridge: ${skillsList.success ? "reachable" : "unreachable"}`,
+        available_skills_sample: availableSkills,
+        hint: "Use listSkills to browse all available skills, or try a different path format.",
+      };
+    }
+
+    return {
+      skill_path,
+      loaded: true,
+      name: results.name,
+      description: results.description,
+      content: results.content.slice(0, 15000), // Cap at 15KB to avoid context bloat
+      content_truncated: results.content.length > 15000,
+      content_length: results.content.length,
+      tools_available: results.tools_available.slice(0, 30),
+      sources: results.sources,
+      hint: "Use the tools_available list to know what operations this skill supports. The content includes playbook instructions for proper usage.",
+    };
+  },
+});
+
+export default loadSkill;
