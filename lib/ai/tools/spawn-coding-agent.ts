@@ -12,6 +12,7 @@ import { tool } from "ai";
 import { z } from "zod";
 import { readFile } from "fs/promises";
 import path from "path";
+import { handoffToV2 } from "@/lib/v2/bridge";
 
 const OPEN_AGENTS_URL =
   process.env.OPEN_AGENTS_URL || "https://neptune-v2.vercel.app";
@@ -34,7 +35,9 @@ function checkTokens(mode: "modify_existing" | "new_project"): TokenStatus {
   const missing: string[] = [];
 
   if (mode === "modify_existing") {
-    if (!OPEN_AGENTS_API_KEY) missing.push("OPEN_AGENTS_API_KEY");
+    // handoffToV2 uses NEPTUNE_INTERNAL_TOKEN || NEPTUNE_V2_HANDOFF_SECRET
+    const hasInternalToken = !!(process.env.NEPTUNE_INTERNAL_TOKEN || process.env.NEPTUNE_V2_HANDOFF_SECRET);
+    if (!hasInternalToken) missing.push("NEPTUNE_INTERNAL_TOKEN or NEPTUNE_V2_HANDOFF_SECRET");
   }
 
   if (mode === "new_project") {
@@ -357,7 +360,7 @@ export const spawnCodingAgent = tool({
       );
     }
 
-    // ── MODIFY_EXISTING — V2 Sandbox Handoff ──────────────────────────
+    // ── MODIFY_EXISTING — V2 Handoff via Bridge ────────────────────────
     if (mode === "modify_existing") {
       const { goal, repoOwner, repoName, baseBranch, createPR, deployToVercel, runtime, sessionId } = params;
 
@@ -365,57 +368,37 @@ export const spawnCodingAgent = tool({
         throw new Error("repoName is required for modify_existing mode");
       }
 
-      const body: Record<string, unknown> = {
-        goal,
-        runtime,
-        repo: {
-          owner: repoOwner,
-          name: repoName,
-          baseBranch,
-        },
-        context: {
-          githubToken: GITHUB_TOKEN,
-          vercelToken: VERCEL_TOKEN,
-          createPR,
-          deployToVercel,
-        },
-      };
+      // Use the V2 bridge (handoffToV2) which sends via /api/chat with correct auth
+      const context = [
+        `Repository: ${repoOwner}/${repoName}`,
+        `Base branch: ${baseBranch}`,
+        `Runtime: ${runtime}`,
+        createPR ? "Create a PR when done." : "",
+        deployToVercel ? "Deploy to Vercel when done." : "",
+        `GitHub token available: ${GITHUB_TOKEN ? "yes" : "no"}`,
+        `Vercel token available: ${VERCEL_TOKEN ? "yes" : "no"}`,
+      ].filter(Boolean).join("\n");
 
-      if (sessionId) {
-        body.sessionId = sessionId;
-      }
+      const handoffResult = await handoffToV2(goal, context, "deepseek-v4-pro");
 
-      const res = await fetch(`${OPEN_AGENTS_URL}/api/sandbox`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${OPEN_AGENTS_API_KEY}`,
-        },
-        body: JSON.stringify(body),
-      });
-
-      if (!res.ok) {
-        const errorText = await res.text();
+      if (!handoffResult.success) {
         throw new Error(
-          `V2 coding agent startup failed: ${res.status} ${errorText}`
+          `V2 handoff failed: ${handoffResult.error || "Unknown error"}`
         );
       }
 
-      const data: V2SandboxResponse = await res.json();
-
       return {
         mode: "modify_existing",
-        sandboxId: data.sandboxId,
-        sessionId: data.sessionId || data.sandboxId,
-        status: data.status,
+        sandboxId: handoffResult.sessionId,
+        sessionId: handoffResult.sessionId,
+        status: "started",
         repo: `${repoOwner}/${repoName}`,
-        branch: data.branchName || "pending",
-        prUrl: data.prUrl || null,
-        streamUrl:
-          data.streamUrl ||
-          `${OPEN_AGENTS_URL}/api/sandbox/status?sandboxId=${data.sandboxId}`,
+        branch: baseBranch || "pending",
+        prUrl: null,
+        streamUrl: handoffResult.sseUrl || handoffResult.sessionUrl || "",
         message:
           `V2 coding agent spawned for ${repoOwner}/${repoName}. ` +
+          `Session: ${handoffResult.sessionId}. ` +
           (createPR ? "Will create a PR when complete. " : "") +
           "Track progress via the stream URL.",
       };

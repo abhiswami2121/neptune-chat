@@ -14,8 +14,10 @@ const NEPTUNE_V2_URL =
   process.env.NEPTUNE_V2_CHAT_URL || "https://neptune-v2.vercel.app";
 
 const NEPTUNE_V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
+const NEPTUNE_INTERNAL_TOKEN = process.env.NEPTUNE_INTERNAL_TOKEN || "";
 
 const DEFAULT_TIMEOUT = 15_000;
+const V2_CHAT_ENDPOINT = `${NEPTUNE_V2_URL}/api/chat`;
 
 // ── Types ────────────────────────────────────────────────────────────────
 
@@ -71,8 +73,9 @@ function authHeaders(): Record<string, string> {
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (NEPTUNE_V2_HANDOFF_SECRET) {
-    headers.Authorization = `Bearer ${NEPTUNE_V2_HANDOFF_SECRET}`;
+  const token = NEPTUNE_INTERNAL_TOKEN || NEPTUNE_V2_HANDOFF_SECRET;
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
   }
   return headers;
 }
@@ -99,25 +102,35 @@ async function fetchWithTimeout(
 // ── Core Bridge API ──────────────────────────────────────────────────────
 
 /**
- * Hand off a coding task to Neptune V2.
- * V2 spawns a session (sandbox or repo) and executes the task.
+ * Hand off a coding task to Neptune V2 via /api/chat.
+ * V2 uses chatId as the session identifier; the SSE stream is consumed
+ * by the calling API route.
  */
 export async function handoffToV2(
   prompt: string,
   context?: string,
   model?: string
 ): Promise<V2HandoffResult> {
+  const chatId = `handoff-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
   try {
     const res = await fetchWithTimeout(
-      `${NEPTUNE_V2_URL}/api/sessions`,
+      V2_CHAT_ENDPOINT,
       {
         method: "POST",
         headers: authHeaders(),
         body: JSON.stringify({
-          prompt,
-          context,
+          messages: [
+            {
+              role: "user",
+              content: context
+                ? `${context}\n\n---\n\n${prompt}`
+                : prompt,
+            },
+          ],
+          chatId,
           model: model ?? "deepseek-v4-pro",
           source: "neptune-chat",
+          mode: "chat",
         }),
       },
       20_000
@@ -131,14 +144,36 @@ export async function handoffToV2(
       };
     }
 
-    const data = await res.json();
-    const sessionId = data.sessionId ?? data.id;
+    // V2 returns SSE stream — read first event to confirm session started
+    const contentType = res.headers.get("content-type") ?? "";
+    if (contentType.includes("text/event-stream") && res.body) {
+      const reader = res.body.getReader();
+      let sessionStarted = false;
+      // Read first few SSE events to confirm connection
+      for (let i = 0; i < 5; i++) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const text = new TextDecoder().decode(value);
+        if (text.includes('"type":"start"') || text.includes('"type":"start-step"')) {
+          sessionStarted = true;
+          break;
+        }
+      }
+      reader.cancel(); // Don't consume full stream from bridge
+      if (!sessionStarted) {
+        return {
+          success: false,
+          error: "V2 session did not start — no start event in SSE stream",
+        };
+      }
+    }
 
+    // Use chatId as sessionId (V2 identifies sessions by chatId)
     return {
       success: true,
-      sessionId,
-      sessionUrl: data.sessionUrl ?? `${NEPTUNE_V2_URL}/sessions/${sessionId}`,
-      sseUrl: data.sseUrl ?? data.streamUrl,
+      sessionId: chatId,
+      sessionUrl: `${NEPTUNE_V2_URL}/chat/${chatId}`,
+      sseUrl: V2_CHAT_ENDPOINT,
     };
   } catch (err) {
     return {
@@ -232,24 +267,30 @@ export async function getV2Session(
 }
 
 /**
- * Get an SSE stream URL for a V2 session.
- * Returns the raw V2 SSE URL — callers should proxy through
- * /api/v2/sessions/[sessionId]/stream for browser consumption.
+ * Get the SSE stream URL for a V2 session.
+ * V2 identifies sessions by chatId; stream URL is the /api/chat endpoint.
  */
 export function getV2StreamUrl(sessionId: string): string {
-  return `${NEPTUNE_V2_URL}/api/sessions/${sessionId}/stream`;
+  return V2_CHAT_ENDPOINT;
 }
 
 /**
  * Get the V2 SSE stream as a ReadableStream for proxying.
+ * Replays the session by sending the chatId and requesting continuation.
  * Returns null if V2 is unreachable.
  */
 export async function getV2SSEStream(
   sessionId: string
 ): Promise<ReadableStream<Uint8Array> | null> {
   try {
-    const res = await fetch(getV2StreamUrl(sessionId), {
+    const res = await fetch(V2_CHAT_ENDPOINT, {
+      method: "POST",
       headers: authHeaders(),
+      body: JSON.stringify({
+        messages: [{ role: "user", content: "continue" }],
+        chatId: sessionId,
+        mode: "chat",
+      }),
     });
 
     if (!res.ok || !res.body) {
