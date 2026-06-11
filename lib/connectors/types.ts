@@ -16,6 +16,10 @@ export interface ConnectorCapability {
   description: string;
   icon?: string; // lucide icon name
   schema?: Record<string, unknown>; // Zod schema shape for docs
+  /** U1.1: Display priority in chat UI. 'low' renders as smaller card and auto-collapses. */
+  displayPriority?: "high" | "normal" | "low";
+  /** U1.1: Auto-collapse after N consecutive same-tool calls. 0 = never collapse. */
+  autoCollapseAfter?: number;
 }
 
 export interface ConnectorManifest {

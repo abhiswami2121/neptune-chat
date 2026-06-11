@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { Toaster } from "sonner";
 import { ChatLayoutClient } from "@/components/chat/chat-layout-client";
 import { DataStreamProvider } from "@/components/chat/data-stream-provider";
+import { ChatSettingsProvider } from "@/components/chat/chat-settings-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
 import { auth } from "../(auth)/auth";
@@ -16,9 +17,11 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         strategy="afterInteractive"
       />
       <DataStreamProvider>
-        <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
-          <SidebarShell>{children}</SidebarShell>
-        </Suspense>
+        <ChatSettingsProvider>
+          <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
+            <SidebarShell>{children}</SidebarShell>
+          </Suspense>
+        </ChatSettingsProvider>
       </DataStreamProvider>
     </>
   );

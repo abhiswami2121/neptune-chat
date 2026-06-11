@@ -19,6 +19,8 @@ const base44Manifest: ConnectorManifest = {
       label: "Query Entity",
       description: "Query any Base44 entity with MongoDB-style filter",
       icon: "Search",
+      displayPriority: "low",
+      autoCollapseAfter: 2,
     },
     {
       id: "createEntity",
@@ -37,12 +39,16 @@ const base44Manifest: ConnectorManifest = {
       label: "Invoke Function",
       description: "Call any registered Base44 backend function",
       icon: "Zap",
+      displayPriority: "low",
+      autoCollapseAfter: 2,
     },
     {
       id: "reportingHub",
       label: "Reporting Hub",
       description: "Operational reports: overview, enrollments, billing, etc.",
       icon: "BarChart3",
+      displayPriority: "low",
+      autoCollapseAfter: 2,
     },
     {
       id: "customer360",

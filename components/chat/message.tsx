@@ -1,4 +1,5 @@
 "use client";
+import { useMemo } from "react";
 import type { UseChatHelpers } from "@ai-sdk/react";
 import type { Vote } from "@/lib/db/schema";
 import type { ChatMessage } from "@/lib/types";
@@ -22,6 +23,14 @@ import { PreviewAttachment } from "./preview-attachment";
 import { StreamingIndicator, detectStreamPhase } from "./streaming-indicator";
 import { ToolResultRenderer } from "./tool-result-renderer";
 import { Weather } from "./weather";
+import {
+  groupToolCalls,
+  CollapsedToolGroup,
+  ToolCallDensityGauge,
+  type ToolPartLike,
+  type ToolCallGroup,
+} from "./tool-call-grouper";
+import { useChatSettings } from "./chat-settings-provider";
 
 const PurePreviewMessage = ({
   addToolApprovalResponse,
@@ -51,6 +60,7 @@ const PurePreviewMessage = ({
   );
 
   useDataStream();
+  const { showAllToolCalls } = useChatSettings();
 
   const isUser = message.role === "user";
   const isAssistant = message.role === "assistant";
@@ -96,6 +106,36 @@ const PurePreviewMessage = ({
     },
     { text: "", isStreaming: false, rendered: false }
   ) ?? { text: "", isStreaming: false, rendered: false };
+
+  // U1.1: Pre-compute tool call collapse groups
+  // Groups of 3+ same-tool calls get collapsed after 2nd call
+  // When showAllToolCalls is enabled, no collapse happens
+  const collapseInfo = useMemo(() => {
+    if (showAllToolCalls) {
+      return { hiddenToolCallIds: new Set<string>(), summaryInsertIndex: new Map() };
+    }
+    const rawParts = message.parts || [];
+    const groups = groupToolCalls(rawParts as ToolPartLike[]);
+    const hiddenToolCallIds = new Set<string>();
+    const summaryInsertIndex = new Map<number, ToolCallGroup>();
+
+    for (const item of groups) {
+      if (item.kind === "tool-group") {
+        const { group } = item;
+        const shownCount = group.collapseAfter;
+        for (let i = shownCount; i < group.parts.length; i++) {
+          const p = group.parts[i];
+          if (p.toolCallId) hiddenToolCallIds.add(p.toolCallId);
+        }
+        // Insert collapse summary at the position of the first hidden part
+        const firstHidden = group.parts[shownCount];
+        if (firstHidden?.index !== undefined) {
+          summaryInsertIndex.set(firstHidden.index, group);
+        }
+      }
+    }
+    return { hiddenToolCallIds, summaryInsertIndex };
+  }, [message.parts, showAllToolCalls]);
 
   const parts = message.parts?.map((part, index) => {
     const { type } = part;
@@ -316,6 +356,15 @@ const PurePreviewMessage = ({
         errorText?: string;
       };
       const { toolCallId, state } = toolPart;
+
+      // U1.1: Check if this tool call should be hidden (auto-collapsed)
+      if (toolCallId && collapseInfo.hiddenToolCallIds.has(toolCallId)) {
+        return null;
+      }
+
+      // U1.1: Insert collapse summary at the position of the first hidden part
+      const collapseSummary = collapseInfo.summaryInsertIndex.get(index);
+
       const toolName = type.replace("tool-", "");
       const isError = state === "output-error";
       const isComplete = state === "output-available" || isError;
@@ -332,9 +381,12 @@ const PurePreviewMessage = ({
         .replace(/Mcp/g, "MCP")
         .trim();
 
-      return (
+      const toolCard = (
         <Tool
-          className="w-[min(100%,550px)]"
+          className={cn(
+            "w-[min(100%,550px)]",
+            collapseSummary && "opacity-0 h-0 overflow-hidden pointer-events-none"
+          )}
           defaultOpen={!isComplete}
           key={toolCallId}
         >
@@ -367,6 +419,61 @@ const PurePreviewMessage = ({
           </ToolContent>
         </Tool>
       );
+
+      // If this position has a collapse summary, render it AFTER the last visible card
+      if (collapseSummary) {
+        return (
+          <div key={`collapse-group-${toolCallId}`}>
+            {toolCard}
+            <CollapsedToolGroup
+              group={collapseSummary}
+              renderPart={(hiddenPart) => {
+                const hp = hiddenPart as unknown as {
+                  toolCallId: string;
+                  state: string;
+                  input?: unknown;
+                  output?: unknown;
+                  errorText?: string;
+                };
+                const hToolName = collapseSummary!.toolName;
+                const hDisplayName = collapseSummary!.displayName;
+                const hIsComplete = hp.state === "output-available" || hp.state === "output-error";
+                return (
+                  <Tool
+                    className="w-[min(100%,550px)]"
+                    defaultOpen={false}
+                    key={hp.toolCallId}
+                  >
+                    <ToolHeader
+                      state={hp.state as any}
+                      title={hDisplayName}
+                      type={type as any}
+                    />
+                    <ToolContent>
+                      {hp.input != null && <ToolInput input={hp.input as any} />}
+                      {hIsComplete && (
+                        <ToolResultRenderer
+                          part={
+                            {
+                              type: "dynamic-tool",
+                              toolName: hToolName,
+                              state: hp.state,
+                              output: hp.output,
+                              errorText: hp.errorText,
+                            } as any
+                          }
+                        />
+                      )}
+                    </ToolContent>
+                  </Tool>
+                );
+              }}
+            />
+          </div>
+        );
+      }
+
+      return toolCard;
     }
 
     return null;
@@ -405,6 +512,8 @@ const PurePreviewMessage = ({
           toolName={streamPhase.toolName}
         />
       )}
+      {/* U1.1: Tool call density gauge */}
+      <ToolCallDensityGauge />
       {actions}
     </>
   );
