@@ -1,0 +1,104 @@
+{
+  "phase": "UF2",
+  "title": "Light Progressive Disclosure Foundation — load_skill Tool",
+  "mission": "U1-FINISH-AND-ARCHITECTURE-PIVOT-2026-06-11",
+  "commits": ["e96a1ed", "fd998e6"],
+  "branch": "main",
+  "timestamp": "2026-06-11T23:35:00.000Z",
+  "author": "abhiswami2121@gmail.com",
+  "status": "LANDED",
+
+  "summary": {
+    "phase": "UF2",
+    "goal": "Build load_skill tool + tiny system prompt header as U2 progressive disclosure foundation without locking architecture",
+    "outcome": "load_skill tool built and registered in inline tools + static manifest. Tiny prefix added to system prompt. TypeScript typecheck passed. pnpm build passed. Vercel deploy READY. /api/tools confirms loadSkill in list (HTTP 200).",
+    "files_changed": 4,
+    "insertions": 282,
+    "new_tool": "loadSkill"
+  },
+
+  "load_skill_tool": {
+    "file": "lib/ai/tools/load-skill.ts",
+    "description": "Load detailed skill content on-demand from the VPS file system bridge. Resolves skill paths across multiple categories.",
+    "input_schema": {
+      "skill_path": "string — e.g. 'connectors/slack', 'capabilities/self-coding', 'organizations/newleaf-financial/customer-support'"
+    },
+    "output": {
+      "skill_path": "string",
+      "loaded": "boolean",
+      "name": "string",
+      "description": "string (extracted from first heading/paragraph)",
+      "content": "string (capped at 15KB)",
+      "content_truncated": "boolean",
+      "content_length": "number",
+      "tools_available": "string[] (extracted from ## Tools section)",
+      "sources": "string[] (file paths that were read)"
+    },
+    "path_resolution": {
+      "connectors/<name>": ["jarvis/cortex/connectors/<name>/SKILL.md", "jarvis/cortex/connectors/<name>/playbook.md", "jarvis/cortex/skills/<name>-connector.md", "jarvis/cortex/skills/<name>.md"],
+      "capabilities/<name>": ["jarvis/cortex/skills/<name>.md", "jarvis/cortex/capabilities/<name>/SKILL.md"],
+      "organizations/<org>/<domain>": ["jarvis/cortex/organizations/<org>/<domain>/SKILL.md", "jarvis/cortex/organizations/<org>/<domain>/playbook.md"],
+      "skills/<name>": ["jarvis/cortex/skills/<name>.md"],
+      "<bare name>": ["jarvis/cortex/skills/<name>.md", "jarvis/cortex/skills/<name>-skill.md", "jarvis/prd/<name>.md"]
+    },
+    "bridge": "Uses VPS FS bridge (secrets.vps.fsBridgeUrl). Falls back to skill listing on miss.",
+    "content_cap": "15000 chars (prevents context bloat)"
+  },
+
+  "registration": {
+    "inline_tools": "Added to inlineTools object in lib/agent/inline-tools.ts under Knowledge category",
+    "tool_requirements": "Requires VPS_FS_BRIDGE_URL — checked via secrets.vps.fsBridgeUrl",
+    "static_manifest": "Added to app/api/tools/route.ts hardcoded tool list",
+    "chat_route": "Included via getAvailableTools() spread in app/(chat)/api/chat/route.ts",
+    "available_when": "VPS_FS_BRIDGE_URL is configured (i.e., VPS FS bridge reachable)"
+  },
+
+  "system_prompt_update": {
+    "file": "lib/ai/prompts.ts",
+    "added": "You have access to load_skill tool for on-demand skill loading. Available skill categories: connectors/, capabilities/, organizations/<org>/<domain>/. Use this to keep context efficient — load detailed connector or playbook details only when you need them.",
+    "location": "In regularPrompt, after the selfCode description and before context section",
+    "intact": "Existing dynamic connector registry (buildConnectorCatalogPrompt) NOT removed — U2 will rearchitect"
+  },
+
+  "deploy_verification": {
+    "vercel_project_id": "prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl",
+    "deploy_state": "READY",
+    "production_url": "neptune-chat-ashy.vercel.app",
+    "typecheck": "PASS (npx tsc --noEmit)",
+    "build": "PASS (pnpm build)"
+  },
+
+  "curl_evidence": [
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/api/tools?_t=1781221020",
+      "http_code": 200,
+      "total_tools": 18,
+      "loadSkill_present": true,
+      "verdict": "PASS — loadSkill appears in static tools manifest at position 5 (knowledge category)"
+    },
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/skills?_t=1781221020",
+      "http_code": 200,
+      "size_bytes": 820000,
+      "verdict": "PASS — public pages still serve"
+    }
+  ],
+
+  "architecture_alignment": {
+    "pattern_a_readiness": "load_skill is the first gatekeeper tool for Pattern A (Documentation-Driven Runtime)",
+    "what_this_enables": "U2 can now use load_skill to read individual skill files on-demand instead of preloading 400+ tools. The file system is the extended brain.",
+    "what_is_NOT_done": "Remaining 4 gatekeeper tools (view_file, execute_skill, list_playbooks, self_code, spawn_v2). Full tool array consolidation. Dynamic registry removal.",
+    "next_step": "UF3 synthesis + U2 architecture pivot recommendation document"
+  },
+
+  "cardinal_compliance": {
+    "no_vps_python_edits": true,
+    "no_pm2_reloads": true,
+    "slack_jarvis_admin_only": true,
+    "never_cancel_other_sessions": true,
+    "vercel_rest_api_only": true,
+    "commit_author_abhiswami2121": true,
+    "proof_json_min_3kb": true,
+    "no_real_customer_data": true
+  }
+}

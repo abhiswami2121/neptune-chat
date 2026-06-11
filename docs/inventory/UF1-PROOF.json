@@ -1,0 +1,228 @@
+{
+  "phase": "UF1",
+  "title": "U1.4 Secrets Server — Typed Secrets Migration",
+  "mission": "U1-FINISH-AND-ARCHITECTURE-PIVOT-2026-06-11",
+  "predecessor": "3f3da1ee8e41",
+  "commit": "8dd150a",
+  "branch": "main",
+  "timestamp": "2026-06-11T23:28:00.000Z",
+  "author": "abhiswami2121@gmail.com",
+  "status": "LANDED",
+
+  "summary": {
+    "phase": "UF1",
+    "goal": "Complete U1.4 secrets server commit + migrate 10 hottest process.env usages to typed @/secrets",
+    "outcome": "Secrets server committed (3 files, 1085 lines). 10 high-impact files migrated from process.env to secrets.<category>.<key>. TypeScript typecheck passed. pnpm build succeeded. Vercel deploy READY. API smoke test HTTP 200 confirmed.",
+    "files_changed": 20,
+    "insertions": 1085,
+    "deletions": 44,
+    "migrations_completed": 10,
+    "secrets_schema_categories": 24
+  },
+
+  "secrets_schema": {
+    "categories": [
+      "slack", "nmi", "hyperswitch", "base44", "vercel", "github", "vps",
+      "openai", "anthropic", "deepseek", "aiGateway", "xai", "groq", "google",
+      "internal", "neptuneV2", "e2b", "resend", "linear", "forth",
+      "vapi", "ghl", "affy", "wiki", "other"
+    ],
+    "total_categories": 25,
+    "validation": "z.object schema validates at import time. Required fields use z.string().min(1). Optional fields use .default(''). Non-blocking: warns on missing optional vars.",
+    "vps_schema_added_field": "toolsBridgeUrl (maps to VPS_TOOLS_BRIDGE_URL, requested by NMI/Hyperswitch tools)"
+  },
+
+  "migrations": [
+    {
+      "file": "lib/agent/inline-tools.ts",
+      "env_vars_migrated": [
+        "VPS_FS_BRIDGE_URL → secrets.vps.fsBridgeUrl",
+        "SLACK_BOT_TOKEN → secrets.slack.botToken",
+        "NEPTUNE_V2_CHAT_URL → secrets.neptuneV2.chatUrl",
+        "NEPTUNE_V2_HANDOFF_SECRET → secrets.neptuneV2.handoffSecret",
+        "NEWLEAF_ADMIN_CHANNEL_ID → secrets.slack.newleafAdminChannelId",
+        "JARVIS_ADMIN_CHANNEL_ID → secrets.slack.jarvisAdminChannelId",
+        "POSTGRES_URL → secrets.internal.postgresUrl"
+      ],
+      "impact": "HIGH — central tool registry, 7 migrations"
+    },
+    {
+      "file": "lib/ai/tools/spawn-coding-agent.ts",
+      "env_vars_migrated": [
+        "OPEN_AGENTS_URL → secrets.neptuneV2.openAgentsUrl",
+        "OPEN_AGENTS_API_KEY → secrets.neptuneV2.openAgentsApiKey",
+        "GITHUB_TOKEN → secrets.github.token",
+        "VERCEL_TOKEN → secrets.vercel.token",
+        "VERCEL_TEAM_ID → secrets.vercel.teamId",
+        "NEPTUNE_INTERNAL_TOKEN → secrets.vps.internalToken",
+        "NEPTUNE_V2_HANDOFF_SECRET → secrets.neptuneV2.handoffSecret"
+      ],
+      "impact": "HIGH — core coding agent tool, 7 migrations"
+    },
+    {
+      "file": "lib/ai/tools/self-code.ts",
+      "env_vars_migrated": [
+        "VERCEL_TOKEN → secrets.vercel.token",
+        "OPEN_AGENTS_URL → secrets.neptuneV2.openAgentsUrl",
+        "OPEN_AGENTS_API_KEY → secrets.neptuneV2.openAgentsApiKey",
+        "GITHUB_TOKEN → secrets.github.token"
+      ],
+      "impact": "HIGH — self-coding capability, 4 migrations"
+    },
+    {
+      "file": "lib/ai/providers.ts",
+      "env_vars_migrated": [
+        "DEEPSEEK_API_KEY → secrets.deepseek.apiKey"
+      ],
+      "impact": "HIGH — AI provider selector, 1 migration"
+    },
+    {
+      "file": "lib/connectors/vercel/tools/index.ts",
+      "env_vars_migrated": [
+        "VERCEL_TOKEN → secrets.vercel.token"
+      ],
+      "impact": "MEDIUM — Vercel deploy connector, 1 migration"
+    },
+    {
+      "file": "lib/connectors/github/tools/index.ts",
+      "env_vars_migrated": [
+        "GITHUB_TOKEN → secrets.github.token"
+      ],
+      "impact": "MEDIUM — GitHub code search/PR connector, 1 migration"
+    },
+    {
+      "file": "lib/connectors/nmi/tools/queryTransactions.ts",
+      "env_vars_migrated": [
+        "VPS_TOOLS_BRIDGE_URL → secrets.vps.toolsBridgeUrl",
+        "BASE44_API_KEY → secrets.base44.apiKey"
+      ],
+      "impact": "MEDIUM — NMI transaction queries, 2 migrations"
+    },
+    {
+      "file": "lib/connectors/nmi/tools/refund.ts",
+      "env_vars_migrated": [
+        "VPS_TOOLS_BRIDGE_URL → secrets.vps.toolsBridgeUrl",
+        "BASE44_API_KEY → secrets.base44.apiKey"
+      ],
+      "impact": "MEDIUM — NMI refund processing, 2 migrations"
+    },
+    {
+      "file": "lib/connectors/nmi/tools/getVault.ts",
+      "env_vars_migrated": [
+        "VPS_TOOLS_BRIDGE_URL → secrets.vps.toolsBridgeUrl",
+        "BASE44_API_KEY → secrets.base44.apiKey"
+      ],
+      "impact": "MEDIUM — NMI vault queries, 2 migrations"
+    },
+    {
+      "file": "lib/connectors/nmi/tools/getSubscription.ts",
+      "env_vars_migrated": [
+        "VPS_TOOLS_BRIDGE_URL → secrets.vps.toolsBridgeUrl",
+        "BASE44_API_KEY → secrets.base44.apiKey"
+      ],
+      "impact": "MEDIUM — NMI subscription queries, 2 migrations"
+    },
+    {
+      "file": "(PREVIOUSLY DONE) lib/connectors/slack/tools/*.ts (5 files)",
+      "env_vars_migrated": [
+        "SLACK_BOT_TOKEN → secrets.slack.botToken",
+        "NEWLEAF_ADMIN_CHANNEL_ID → secrets.slack.newleafAdminChannelId",
+        "JARVIS_ADMIN_CHANNEL_ID → secrets.slack.jarvisAdminChannelId"
+      ],
+      "impact": "HIGH — Slack messaging, 5 file migrations, already done in predecessor"
+    },
+    {
+      "file": "(PREVIOUSLY DONE) lib/connectors/base44/client.ts",
+      "env_vars_migrated": [
+        "BASE44_API_KEY → secrets.base44.apiKey"
+      ],
+      "impact": "HIGH — Base44 SDK client, already done in predecessor"
+    },
+    {
+      "file": "(PREVIOUSLY DONE) lib/v2/bridge.ts",
+      "env_vars_migrated": [
+        "NEPTUNE_V2_CHAT_URL → secrets.neptuneV2.chatUrl",
+        "NEPTUNE_V2_HANDOFF_SECRET → secrets.neptuneV2.handoffSecret",
+        "NEPTUNE_INTERNAL_TOKEN → secrets.vps.internalToken"
+      ],
+      "impact": "HIGH — V2 bidirectional bridge, already done in predecessor"
+    }
+  ],
+
+  "deploy_verification": {
+    "vercel_project_id": "prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl",
+    "deployment_id": "dpl_E5t4vmuYstcsP1PF2G65tMA14d8o",
+    "deploy_state": "READY",
+    "deploy_url": "neptune-chat-nxi7ga6eu-abhiswami2121-2555s-projects.vercel.app",
+    "production_url": "neptune-chat-ashy.vercel.app",
+    "typecheck": "PASS (npx tsc --noEmit)",
+    "build": "PASS (pnpm build — all routes compiled)"
+  },
+
+  "curl_evidence": [
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/api/tools?_t=1781220619",
+      "http_code": 200,
+      "size_bytes": 1563,
+      "response_preview": "{\"tools\":[{\"name\":\"readSkill\",...,{\"name\":\"selfCode\"}],\"count\":17}",
+      "verdict": "PASS — 17 tools listed, no secrets validation errors"
+    },
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/api/context?_t=1781220619",
+      "http_code": 200,
+      "size_bytes": 1103,
+      "response_preview": "{\"agent\":\"Neptune Chat\",\"repoUrl\":\"https://github.com/abhiswami2121/neptune-chat\",...}",
+      "verdict": "PASS — self-context including vercel project ID and capabilities returned"
+    },
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/skills?_t=1781220619",
+      "http_code": 200,
+      "size_bytes": 820036,
+      "verdict": "PASS — skills library page renders"
+    },
+    {
+      "endpoint": "https://neptune-chat-ashy.vercel.app/integrations?_t=1781220619",
+      "http_code": 200,
+      "size_bytes": 819428,
+      "verdict": "PASS — integrations page renders"
+    }
+  ],
+
+  "remaining_process_env_usages": {
+    "note": "The following process.env references remain intentional — they use Vercel system runtime vars or are not yet migrated",
+    "vercel_system_vars": [
+      "process.env.VERCEL_URL — Vercel runtime deployment URL, not a secret"
+    ],
+    "not_yet_migrated": [
+      "lib/constants.ts — NODE_ENV, PLAYWRIGHT_TEST_BASE_URL (test configs)",
+      "lib/deploy/vercel-verify.ts — VERCEL_TOKEN, VERCEL_TEAM_ID (1 file)",
+      "lib/code-handoff-bridge.ts — NEPTUNE_V2_* (1 file, legacy bridge)",
+      "lib/ratelimit.ts — REDIS_URL",
+      "lib/db/migrate.ts — POSTGRES_URL",
+      "lib/db/queries.ts — POSTGRES_URL",
+      "lib/mcp/client.ts — MCP_SERVER_URL",
+      "lib/sandbox/orchestrator.ts — VPS_BRIDGE_URL, NEPTUNE_INTERNAL_TOKEN, OPEN_AGENTS_*",
+      "lib/connectors/wiki/tools/index.ts — HERMES_API_URL, HERMES_KEY",
+      "lib/connectors/forth/tools/index.ts — BASE44_API_URL, BASE44_API_KEY",
+      "lib/connectors/affy/tools/index.ts — BASE44_API_URL, BASE44_API_KEY",
+      "lib/connectors/ghl/tools/index.ts — BASE44_API_URL, BASE44_API_KEY",
+      "lib/connectors/linear/tools/index.ts — LINEAR_API_KEY",
+      "lib/connectors/hyperswitch/tools/*.ts — VPS_TOOLS_BRIDGE_URL, BASE44_API_KEY (3 files)",
+      "lib/ai/tools/create-workflow.ts — VERCEL_URL, NEPTUNE_INTERNAL_TOKEN",
+      "lib/playbook-os-client.ts — PLAYBOOK_OS_REPO_PATH, HERMES_ACTION_GROUPS_PATH",
+      "lib/ai/models.ts — IS_DEMO"
+    ],
+    "full_migration_planned": "U2 — remaining files to be migrated as part of full progressive disclosure architecture"
+  },
+
+  "cardinal_compliance": {
+    "no_vps_python_edits": true,
+    "no_pm2_reloads": true,
+    "slack_jarvis_admin_only": true,
+    "never_cancel_other_sessions": true,
+    "vercel_rest_api_only": true,
+    "commit_author_abhiswami2121": true,
+    "proof_json_min_3kb": true,
+    "no_real_customer_data": true
+  }
+}
