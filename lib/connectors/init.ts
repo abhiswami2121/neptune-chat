@@ -1,6 +1,6 @@
 /**
  * Connector auto-init — registers all connector manifests at import time.
- * Import this once in the chat route to populate the registry.
+ * Also exports dynamic connector discovery (server-only via init-server.ts).
  */
 
 import affyManifest from "./affy/manifest";
@@ -45,3 +45,12 @@ export function initConnectors(): void {
 }
 
 export { manifests };
+
+/**
+ * List ALL connector names — dynamically enriched by server-side scan.
+ * In the client, this only returns TypeScript manifest names.
+ * The server uses init-server.ts to add skills/connectors/ directory names.
+ */
+export function getAllConnectorNames(): string[] {
+  return manifests.map((m) => m.id);
+}

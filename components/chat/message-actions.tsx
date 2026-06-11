@@ -75,7 +75,7 @@ export function PureMessageActions({
         <div className="flex items-center gap-0.5">
           {onEdit && (
             <Action
-              className="size-7 text-muted-foreground/50 hover:text-foreground"
+              className="size-7 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
               data-testid="message-edit-button"
               onClick={onEdit}
               tooltip="Edit"
@@ -84,7 +84,7 @@ export function PureMessageActions({
             </Action>
           )}
           <Action
-            className="size-7 text-muted-foreground/50 hover:text-foreground"
+            className="size-7 text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
             onClick={handleCopy}
             tooltip="Copy"
           >
@@ -98,7 +98,7 @@ export function PureMessageActions({
   return (
     <Actions className="-ml-0.5 opacity-0 transition-opacity duration-150 group-hover/message:opacity-100">
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        className="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
         onClick={handleCopy}
         tooltip="Copy full response (Cmd+Shift+C)"
       >
@@ -106,7 +106,7 @@ export function PureMessageActions({
       </Action>
 
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        className="text-zinc-500 dark:text-zinc-400 hover:text-green-600 dark:hover:text-green-400"
         data-testid="message-upvote"
         disabled={vote?.isUpvoted}
         onClick={() => {
@@ -159,7 +159,7 @@ export function PureMessageActions({
       </Action>
 
       <Action
-        className="text-muted-foreground/50 hover:text-foreground"
+        className="text-zinc-500 dark:text-zinc-400 hover:text-red-600 dark:hover:text-red-400"
         data-testid="message-downvote"
         disabled={vote && !vote.isUpvoted}
         onClick={() => {
