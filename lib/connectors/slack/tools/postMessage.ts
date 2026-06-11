@@ -5,7 +5,9 @@ import { WebClient } from "@slack/web-api";
 import { tool } from "ai";
 import { z } from "zod";
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
+import { secrets } from "@/secrets";
+
+const SLACK_BOT_TOKEN = secrets.slack.botToken;
 
 export const postMessage = tool({
   description: "Post a message to a Slack channel. Use channel name or ID.",

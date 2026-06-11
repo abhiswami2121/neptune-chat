@@ -12,12 +12,13 @@
  */
 
 // ── Configuration ────────────────────────────────────────────────────────
+import { secrets } from "@/secrets";
 
 const NEPTUNE_V2_URL =
-  process.env.NEPTUNE_V2_CHAT_URL || "https://neptune-v2.vercel.app";
+  secrets.neptuneV2.chatUrl || "https://neptune-v2.vercel.app";
 
-const NEPTUNE_V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
-const NEPTUNE_INTERNAL_TOKEN = process.env.NEPTUNE_INTERNAL_TOKEN || "";
+const NEPTUNE_V2_HANDOFF_SECRET = secrets.neptuneV2.handoffSecret;
+const NEPTUNE_INTERNAL_TOKEN = secrets.vps.internalToken;
 
 const DEFAULT_TIMEOUT = 15_000;
 const V2_HANDOFF_TIMEOUT = 60_000; // U1.2: 60s max for V2 handoff

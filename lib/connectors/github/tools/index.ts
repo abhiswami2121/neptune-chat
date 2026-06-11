@@ -1,7 +1,8 @@
 import { tool } from "ai";
 import { z } from "zod";
+import { secrets } from "@/secrets";
 
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+const GITHUB_TOKEN = secrets.github.token;
 
 async function ghApi(path: string, method = "GET", body?: unknown) {
   if (!GITHUB_TOKEN) throw new Error("GITHUB_TOKEN not configured");

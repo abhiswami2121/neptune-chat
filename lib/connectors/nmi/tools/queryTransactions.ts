@@ -3,9 +3,10 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
+import { secrets } from "@/secrets";
 
-const BRIDGE_URL = process.env.VPS_TOOLS_BRIDGE_URL || "";
-const BASE44_KEY = process.env.BASE44_API_KEY || "";
+const BRIDGE_URL = secrets.vps.toolsBridgeUrl;
+const BASE44_KEY = secrets.base44.apiKey;
 
 export const queryTransactions = tool({
   description:

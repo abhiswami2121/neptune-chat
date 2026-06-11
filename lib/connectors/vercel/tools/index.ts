@@ -5,9 +5,10 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
+import { secrets } from "@/secrets";
 
 const VERCEL_API = "https://api.vercel.com";
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
+const VERCEL_TOKEN = secrets.vercel.token;
 
 function vercelHeaders(): Record<string, string> {
   return {

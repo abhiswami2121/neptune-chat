@@ -5,11 +5,13 @@ import { WebClient } from "@slack/web-api";
 import { tool } from "ai";
 import { z } from "zod";
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
+import { secrets } from "@/secrets";
+
+const SLACK_BOT_TOKEN = secrets.slack.botToken;
 
 const CHANNEL_SHORTCUTS: Record<string, string> = {
-  "newleaf-admin": process.env.NEWLEAF_ADMIN_CHANNEL_ID || "C096PSS45Q9",
-  "jarvis-admin": process.env.JARVIS_ADMIN_CHANNEL_ID || "C0AQDDC3HAB",
+  "newleaf-admin": secrets.slack.newleafAdminChannelId,
+  "jarvis-admin": secrets.slack.jarvisAdminChannelId || "C0AQDDC3HAB",
 };
 
 function parseSince(since: string): number | undefined {

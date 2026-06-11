@@ -14,15 +14,16 @@ import { readFile } from "fs/promises";
 import path from "path";
 import { handoffToV2 } from "@/lib/v2/bridge";
 import { safeToolCall, toolError, type StructuredToolResult } from "@/lib/v2/retry";
+import { secrets } from "@/secrets";
 
 const OPEN_AGENTS_URL =
-  process.env.OPEN_AGENTS_URL || "https://neptune-v2.vercel.app";
-const OPEN_AGENTS_API_KEY = process.env.OPEN_AGENTS_API_KEY || "";
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || "";
+  secrets.neptuneV2.openAgentsUrl || "https://neptune-v2.vercel.app";
+const OPEN_AGENTS_API_KEY = secrets.neptuneV2.openAgentsApiKey;
+const GITHUB_TOKEN = secrets.github.token;
 const GITHUB_API = "https://api.github.com";
 const VERCEL_API = "https://api.vercel.com";
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
-const VERCEL_TEAM_ID = process.env.VERCEL_TEAM_ID || "";
+const VERCEL_TOKEN = secrets.vercel.token;
+const VERCEL_TEAM_ID = secrets.vercel.teamId;
 const TEMPLATE_DIR = "/home/neptune/templates/nextjs-16-shadcn";
 
 // ─── Token Validation ─────────────────────────────────────────────────────
@@ -37,7 +38,7 @@ function checkTokens(mode: "modify_existing" | "new_project"): TokenStatus {
 
   if (mode === "modify_existing") {
     // handoffToV2 uses NEPTUNE_INTERNAL_TOKEN || NEPTUNE_V2_HANDOFF_SECRET
-    const hasInternalToken = !!(process.env.NEPTUNE_INTERNAL_TOKEN || process.env.NEPTUNE_V2_HANDOFF_SECRET);
+    const hasInternalToken = !!(secrets.vps.internalToken || secrets.neptuneV2.handoffSecret);
     if (!hasInternalToken) missing.push("NEPTUNE_INTERNAL_TOKEN or NEPTUNE_V2_HANDOFF_SECRET");
   }
 

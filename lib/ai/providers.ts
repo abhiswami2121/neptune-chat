@@ -2,6 +2,7 @@ import { createOpenAICompatible } from "@ai-sdk/openai-compatible";
 import { customProvider, gateway } from "ai";
 import { isTestEnvironment } from "../constants";
 import { titleModel } from "./models";
+import { secrets } from "@/secrets";
 
 // ── Direct DeepSeek client (lazy init) ──────────────────────────────
 // Created lazily so process.env is guaranteed populated at call time.
@@ -15,7 +16,7 @@ function getDeepSeekDirect() {
     _deepseekDirect = createOpenAICompatible({
       baseURL: "https://api.deepseek.com/v1",
       name: "deepseek-direct",
-      apiKey: process.env.DEEPSEEK_API_KEY,
+      apiKey: secrets.deepseek.apiKey,
     });
   }
   return _deepseekDirect;
@@ -55,7 +56,7 @@ export function getLanguageModel(modelId: string) {
   // Direct DeepSeek models → user's own API key, NO gateway
   // Graceful fallback: if DEEPSEEK_API_KEY is not configured, route through Gateway
   if (DIRECT_DEEPSEEK_IDS.has(modelId)) {
-    if (process.env.DEEPSEEK_API_KEY) {
+    if (secrets.deepseek.apiKey) {
       const apiModelName = DEEPSEEK_MODEL_MAP[modelId];
       return getDeepSeekDirect().chatModel(apiModelName);
     }

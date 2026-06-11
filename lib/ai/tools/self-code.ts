@@ -9,6 +9,7 @@
  */
 import { tool } from "ai";
 import { z } from "zod";
+import { secrets } from "@/secrets";
 
 // ─── Self-Context Constants ────────────────────────────────────────────────
 
@@ -28,7 +29,7 @@ const SELF_CONTEXT = {
 // ─── Vercel API Helpers ────────────────────────────────────────────────────
 
 const VERCEL_API = "https://api.vercel.com";
-const VERCEL_TOKEN = process.env.VERCEL_TOKEN || "";
+const VERCEL_TOKEN = secrets.vercel.token;
 
 function vercelHeaders(): Record<string, string> {
   return {
@@ -211,8 +212,8 @@ export const selfCode = tool({
 
     // ── Execute: use V2 sandbox to modify self ──────────────────────────
     const OPEN_AGENTS_URL =
-      process.env.OPEN_AGENTS_URL || "https://neptune-v2.vercel.app";
-    const OPEN_AGENTS_API_KEY = process.env.OPEN_AGENTS_API_KEY || "";
+      secrets.neptuneV2.openAgentsUrl || "https://neptune-v2.vercel.app";
+    const OPEN_AGENTS_API_KEY = secrets.neptuneV2.openAgentsApiKey;
 
     if (!OPEN_AGENTS_API_KEY) {
       return {
@@ -253,7 +254,7 @@ export const selfCode = tool({
               `Before push: pnpm typecheck && pnpm build`,
               `After push: verify Vercel deploy READY`,
             ].join("\n"),
-            githubToken: process.env.GITHUB_TOKEN || "",
+            githubToken: secrets.github.token,
             vercelToken: VERCEL_TOKEN,
             createPR: true,
             deployToVercel: true,

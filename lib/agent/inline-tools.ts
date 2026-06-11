@@ -12,6 +12,7 @@
 import { WebClient } from "@slack/web-api";
 import { tool } from "ai";
 import { z } from "zod";
+import { secrets } from "@/secrets";
 import {
   createWorkflow,
   updateWorkflow,
@@ -21,18 +22,18 @@ import { selfCode } from "@/lib/ai/tools/self-code";
 // ── Configuration ────────────────────────────────────────────────────────
 
 const VPS_FS_BRIDGE_URL =
-  process.env.VPS_FS_BRIDGE_URL || "https://187.127.250.171:8102/api/fs";
+  secrets.vps.fsBridgeUrl || "https://187.127.250.171:8102/api/fs";
 
-const SLACK_BOT_TOKEN = process.env.SLACK_BOT_TOKEN || "";
+const SLACK_BOT_TOKEN = secrets.slack.botToken;
 const NEPTUNE_V2_URL =
-  process.env.NEPTUNE_V2_CHAT_URL || "https://neptune-v2.vercel.app";
-const NEPTUNE_V2_HANDOFF_SECRET = process.env.NEPTUNE_V2_HANDOFF_SECRET || "";
+  secrets.neptuneV2.chatUrl || "https://neptune-v2.vercel.app";
+const NEPTUNE_V2_HANDOFF_SECRET = secrets.neptuneV2.handoffSecret;
 
 // ── Slack Channel Shortcuts ──────────────────────────────────────────────
 
 const SLACK_CHANNEL_SHORTCUTS: Record<string, string | undefined> = {
-  "newleaf-admin": process.env.NEWLEAF_ADMIN_CHANNEL_ID || "C096PSS45Q9",
-  "jarvis-admin": process.env.JARVIS_ADMIN_CHANNEL_ID,
+  "newleaf-admin": secrets.slack.newleafAdminChannelId || "C096PSS45Q9",
+  "jarvis-admin": secrets.slack.jarvisAdminChannelId,
 };
 
 // ── Shared Helpers ───────────────────────────────────────────────────────
@@ -319,7 +320,7 @@ export const queryDatabase = tool({
       const { createClient } = await import("@vercel/postgres");
 
       const client = createClient({
-        connectionString: process.env.POSTGRES_URL,
+        connectionString: secrets.internal.postgresUrl,
       });
 
       await client.connect();
@@ -996,12 +997,19 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
 
 /**
  * Returns the list of tool names that are currently available
- * based on configured environment variables.
+ * based on configured secrets values.
  */
 export function getAvailableToolNames(): string[] {
   const available: string[] = [];
   for (const [name, reqs] of Object.entries(TOOL_REQUIREMENTS)) {
-    const allMet = reqs.every((env) => Boolean(process.env[env]));
+    const allMet = reqs.every((env) => {
+      switch (env) {
+        case "VPS_FS_BRIDGE_URL": return !!secrets.vps.fsBridgeUrl;
+        case "SLACK_BOT_TOKEN": return !!secrets.slack.botToken;
+        case "POSTGRES_URL": return !!secrets.internal.postgresUrl;
+        default: return Boolean(process.env[env]);
+      }
+    });
     if (allMet) {
       available.push(name);
     }
@@ -1018,7 +1026,14 @@ export function getAvailableTools(): Record<string, any> {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const available: Record<string, any> = {};
   for (const [name, reqs] of Object.entries(TOOL_REQUIREMENTS)) {
-    const allMet = reqs.every((env) => Boolean(process.env[env]));
+    const allMet = reqs.every((env) => {
+      switch (env) {
+        case "VPS_FS_BRIDGE_URL": return !!secrets.vps.fsBridgeUrl;
+        case "SLACK_BOT_TOKEN": return !!secrets.slack.botToken;
+        case "POSTGRES_URL": return !!secrets.internal.postgresUrl;
+        default: return Boolean(process.env[env]);
+      }
+    });
     if (allMet && inlineTools[name as keyof typeof inlineTools]) {
       available[name] = inlineTools[name as keyof typeof inlineTools];
     }
