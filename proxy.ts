@@ -23,7 +23,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/sandbox/stream") ||
     pathname.startsWith("/api/tools") ||
     pathname.startsWith("/api/connectors") ||
-    pathname.startsWith("/api/workflow")
+    pathname.startsWith("/api/workflow") ||
+    pathname.startsWith("/api/context")
   ) {
     return NextResponse.next();
   }
