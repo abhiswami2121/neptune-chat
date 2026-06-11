@@ -8,6 +8,7 @@ export {
   listPRsSchema,
   createPRSchema,
   spawnCodingAgentSchema,
+  listReposSchema,
   githubSchemas,
 } from "./schema";
 export type {
@@ -16,4 +17,5 @@ export type {
   ListPRsInput,
   CreatePRInput,
   SpawnCodingAgentInput,
+  ListReposInput,
 } from "./schema";
