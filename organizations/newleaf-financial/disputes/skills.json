@@ -1,0 +1,6 @@
+[
+  {"ref": "connectors/forth", "version": "^1.0.0"},
+  {"ref": "connectors/base44", "version": "^1.0.0"},
+  {"ref": "functions/parse-fcra-credit-report", "version": "^1.0.0"},
+  {"ref": "functions/validate-action", "version": "^1.0.0"}
+]
