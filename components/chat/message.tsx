@@ -19,6 +19,7 @@ import { SparklesIcon } from "./icons";
 import { MessageActions } from "./message-actions";
 import { MessageReasoning } from "./message-reasoning";
 import { PreviewAttachment } from "./preview-attachment";
+import { StreamingIndicator, detectStreamPhase } from "./streaming-indicator";
 import { ToolResultRenderer } from "./tool-result-renderer";
 import { Weather } from "./weather";
 
@@ -382,6 +383,11 @@ const PurePreviewMessage = ({
     />
   );
 
+  // Detect stream phase for indicator
+  const streamPhase = isAssistant && isLoading
+    ? detectStreamPhase(message.parts)
+    : { phase: "idle" as const };
+
   const content = isThinking ? (
     <div className="flex h-[calc(13px*1.65)] items-center text-[13px] leading-[1.65]">
       <Shimmer className="font-medium" duration={1}>
@@ -392,6 +398,13 @@ const PurePreviewMessage = ({
     <>
       {attachments}
       {parts}
+      {/* Streaming phase indicator */}
+      {streamPhase.phase !== "idle" && (
+        <StreamingIndicator
+          phase={streamPhase.phase}
+          toolName={streamPhase.toolName}
+        />
+      )}
       {actions}
     </>
   );
