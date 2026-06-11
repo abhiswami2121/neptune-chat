@@ -60,6 +60,17 @@ export function NeptuneSidebar() {
         </button>
       </div>
 
+      {/* New Chat */}
+      <div className="px-2 pt-2">
+        <Link
+          className="flex items-center gap-2 w-full px-3 py-2 rounded-md text-sm font-medium bg-primary text-primary-foreground hover:bg-primary/90 transition-colors"
+          href="/chat"
+        >
+          <MessageSquare size={16} />
+          {!collapsed && <span>+ New Chat</span>}
+        </Link>
+      </div>
+
       {/* Tabs */}
       <nav className="flex-1 overflow-y-auto py-2">
         {TABS.map((tab) => {

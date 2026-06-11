@@ -6,6 +6,7 @@
  */
 
 import { initConnectors, manifests } from "@/lib/connectors/init";
+import { discoverDynamicConnectors } from "@/lib/connectors/init-server";
 
 interface ConnectorInfo {
   id: string;
@@ -55,5 +56,12 @@ export function GET() {
     disconnected: connectors.filter((c) => c.status === "disconnected").length,
   };
 
-  return Response.json({ summary, connectors });
+  // Dynamic discovery: scan skills/connectors/ for connectors not yet in manifests
+  const dynamicNames = discoverDynamicConnectors();
+
+  return Response.json({
+    summary,
+    connectors,
+    dynamic_discovered: dynamicNames,
+  });
 }
