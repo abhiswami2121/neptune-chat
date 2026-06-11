@@ -82,6 +82,12 @@ export async function GET() {
       category: "v2-bridge",
       description: "Stream V2 progress",
     },
+    {
+      name: "selfCode",
+      category: "self-coding",
+      description:
+        "Make small fixes to Neptune Chat's own codebase (typos, color tweaks, copy changes). Hands off to V2 for larger work.",
+    },
   ];
   return NextResponse.json({ tools, count: tools.length });
 }

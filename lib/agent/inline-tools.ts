@@ -16,6 +16,7 @@ import {
   createWorkflow,
   updateWorkflow,
 } from "@/lib/ai/tools/create-workflow";
+import { selfCode } from "@/lib/ai/tools/self-code";
 
 // ── Configuration ────────────────────────────────────────────────────────
 
@@ -968,6 +969,8 @@ export const inlineTools = {
   controlV2Session,
   // Integration Discovery
   listIntegrations,
+  // Self-Coding
+  selfCode,
 };
 
 /** Map of which tools require which env vars to function. */
@@ -988,6 +991,7 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
   streamV2Progress: [],
   controlV2Session: [],
   listIntegrations: [],
+  selfCode: [],
 };
 
 /**
