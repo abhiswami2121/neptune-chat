@@ -35,6 +35,13 @@ const githubManifest: ConnectorManifest = {
       icon: "GitPullRequestArrow",
     },
     {
+      id: "listRepos",
+      label: "List Repositories",
+      description:
+        "List ALL GitHub repositories with full pagination — returns every repo the authenticated user can access",
+      icon: "FolderGit2",
+    },
+    {
       id: "spawnCodingAgent",
       label: "V2 Coding Agent",
       description:

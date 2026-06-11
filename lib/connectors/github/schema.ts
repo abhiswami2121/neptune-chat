@@ -71,11 +71,37 @@ export const spawnCodingAgentSchema = {
   }),
 };
 
+export const listReposSchema = {
+  input: z.object({
+    type: z.enum(["all", "owner", "public", "private", "member"]).default("all"),
+    sort: z.enum(["created", "updated", "pushed", "full_name"]).default("updated"),
+    direction: z.enum(["asc", "desc"]).default("desc"),
+    limit: z.number().optional(),
+  }),
+  output: z.object({
+    total_count: z.number(),
+    fetched_all: z.boolean(),
+    repositories: z.array(
+      z.object({
+        name: z.string(),
+        full_name: z.string(),
+        private: z.boolean(),
+        description: z.string().nullable(),
+        html_url: z.string(),
+        language: z.string().nullable(),
+        updated_at: z.string(),
+        default_branch: z.string(),
+      })
+    ),
+  }),
+};
+
 export type SearchCodeInput = z.infer<typeof searchCodeSchema.input>;
 export type GetFileInput = z.infer<typeof getFileSchema.input>;
 export type ListPRsInput = z.infer<typeof listPRsSchema.input>;
 export type CreatePRInput = z.infer<typeof createPRSchema.input>;
 export type SpawnCodingAgentInput = z.infer<typeof spawnCodingAgentSchema.input>;
+export type ListReposInput = z.infer<typeof listReposSchema.input>;
 
 export const githubSchemas = {
   searchCode: searchCodeSchema,
@@ -83,4 +109,5 @@ export const githubSchemas = {
   listPRs: listPRsSchema,
   createPR: createPRSchema,
   spawnCodingAgent: spawnCodingAgentSchema,
+  listRepos: listReposSchema,
 } as const;
