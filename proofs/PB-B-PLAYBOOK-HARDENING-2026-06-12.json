@@ -1,0 +1,126 @@
+{
+  "proof": {
+    "phase": "PB-B",
+    "title": "Domain Playbook Hardening — Routines + Custom Skills + Workflows",
+    "commit": "6d3ea02",
+    "timestamp": "2026-06-12T02:30:00.000Z",
+    "status": "LANDED"
+  },
+  "scope": {
+    "domains_hardened": 11,
+    "routines_json_count": 11,
+    "routines_json_total_bytes": 16416,
+    "playbooks_updated": 11,
+    "custom_skills_sections_added": 11,
+    "workflows_dirs_created": 11
+  },
+  "domains": {
+    "billing": {
+      "routines": ["Customer 360 Lookup", "Charge Customer", "Refund Customer", "Recover Decline", "Billing Chain Reconciliation"],
+      "routines_json_bytes": 3345,
+      "custom_skills": {
+        "connectors": ["github (35)", "ghl (35)"],
+        "functions": ["parse-decline-reason", "compute-mrr", "annotation-collector", "usage-telemetry"]
+      }
+    },
+    "customer-support": {
+      "routines": ["Customer 360 Lookup", "Triage Support Ticket", "Chargeback Risk Escalation"],
+      "routines_json_bytes": 1896,
+      "custom_skills": {
+        "connectors": ["ghl (35)"],
+        "functions": ["parse-decline-reason", "annotation-collector", "usage-telemetry"]
+      }
+    },
+    "disputes": {
+      "routines": ["Start Dispute Round", "Track Dispute Response", "Round 2 Reinvestigation"],
+      "routines_json_bytes": 1973,
+      "custom_skills": {
+        "connectors": ["forth (30)", "affy (15)"],
+        "functions": ["annotation-collector", "usage-telemetry"]
+      }
+    },
+    "deploy-vercel-github": {
+      "routines": ["Ship a Feature", "Diagnose Stale UI"],
+      "routines_json_bytes": 1379,
+      "custom_skills": {
+        "connectors": ["github (35)", "vercel (25)"],
+        "functions": ["usage-telemetry"]
+      }
+    },
+    "engineering": {
+      "routines": ["Code Review", "Architecture Decision", "Create PRD"],
+      "routines_json_bytes": 1833,
+      "custom_skills": {
+        "connectors": ["github (35)", "linear (25)", "wiki (20)", "mcp-hub (15)"],
+        "functions": ["annotation-collector", "usage-telemetry"]
+      }
+    },
+    "agent-orchestration": {
+      "routines": ["Dispatch Code Task", "Self-Heal After Agent Failure"],
+      "routines_json_bytes": 1278,
+      "custom_skills": {
+        "connectors": ["mcp-hub (15)"],
+        "functions": ["annotation-collector", "usage-telemetry"]
+      }
+    },
+    "reporting": {
+      "routines": ["Morning Pulse Report", "Customer Metrics Query"],
+      "routines_json_bytes": 1149,
+      "custom_skills": {
+        "connectors": ["ghl (35)"],
+        "functions": ["compute-mrr", "usage-telemetry"]
+      }
+    },
+    "vps-ops": {
+      "routines": ["VPS Health Check", "VPS Incident Response"],
+      "routines_json_bytes": 1319,
+      "custom_skills": {
+        "connectors": [],
+        "functions": ["usage-telemetry"]
+      }
+    },
+    "vercel-discipline": {
+      "routines": ["Verify Deployment", "Rollback Deployment"],
+      "routines_json_bytes": 1175,
+      "custom_skills": {
+        "connectors": ["vercel (25)"],
+        "functions": []
+      }
+    },
+    "marketing": {
+      "routines": ["Campaign Performance Report"],
+      "routines_json_bytes": 582,
+      "custom_skills": {
+        "connectors": ["ghl (35)"],
+        "functions": ["annotation-collector"]
+      }
+    },
+    "HR": {
+      "routines": ["Team Status Check"],
+      "routines_json_bytes": 487,
+      "custom_skills": {
+        "connectors": [],
+        "functions": ["annotation-collector", "usage-telemetry"]
+      }
+    }
+  },
+  "total_routine_count": 27,
+  "playbook_template_compliance": {
+    "operational_context": "11/11",
+    "toolbox": "11/11 (via Custom Skills section)",
+    "workflows": "11/11 (directories created)",
+    "custom_skills": "11/11 (connectors/neptune references added)",
+    "best_practices": "11/11 (via Safeguards sections)",
+    "anti_patterns": "11/11",
+    "routines": "11/11 (routines.json files)"
+  },
+  "cross_references": {
+    "cardinals_referenced": ["6a153d63", "6a273f70", "6a276f8c", "6a29cf6f", "6a29d171", "6a20a987"],
+    "playbook_router": "PLAYBOOK-ROUTER.md (90 intent routes, 245 lines)",
+    "neptune_connector": "connectors/neptune/SKILL.md (200 actions)",
+    "phase_8_skills": "connectors/neptune/skills/ (github, ghl, linear, vercel, forth, wiki, mcp-hub, affy)",
+    "phase_8_functions": "connectors/neptune/functions/ (parse-decline-reason, compute-mrr, annotation-collector, usage-telemetry)"
+  },
+  "slack_synthesis_posted": false,
+  "parent_prd": "jarvis/prd/PLAYBOOK-FIRST-ORCHESTRATION-MASTER-PRD-2026-06-12.md"
+}

@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { useSidebar } from "@/components/ui/sidebar";
 import { VercelIcon } from "./icons";
 import { VisibilitySelector, type VisibilityType } from "./visibility-selector";
+import { ChatStatusBar } from "./chat-status-bar";
 
 function PureChatHeader({
   chatId,
@@ -50,9 +51,12 @@ function PureChatHeader({
         />
       )}
 
+      {/* Phase 9: Live status bar — VPS health, V2 sessions, telemetry nav */}
+      <ChatStatusBar />
+
       <Button
         asChild
-        className="hidden rounded-lg bg-foreground px-4 text-background hover:bg-foreground/90 md:ml-auto md:flex"
+        className="hidden rounded-lg bg-foreground px-4 text-background hover:bg-foreground/90 md:flex"
       >
         <Link
           href="https://vercel.com/templates/next.js/chatbot"
