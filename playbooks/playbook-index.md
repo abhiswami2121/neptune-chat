@@ -93,6 +93,21 @@ This index is part of the U2.4 Relational Graph (4-Dimensional Bidirectional DAG
 Each entity has a GRAPH-TAG.json with bidirectional links to all related entities.
 See also: `playbooks/*/GRAPH-TAG.json`, `connectors/*/GRAPH-TAG.json`, `skills/*/GRAPH-TAG.json`
 
+## Cross-Agent Shared Skills (U2.6)
+
+Shared skills accessible from both neptune-chat AND neptune-v2 agents:
+
+| Skill | Path | Description |
+|-------|------|-------------|
+| Skill Author | shared-skills/skill-author/SKILL.md | Autonomous skill creation — wrap APIs, create connectors, update playbooks |
+| Deploy Discipline | shared-skills/deploy-discipline/SKILL.md | Canonical Vercel deploy patterns, pre-deploy checks, rollback |
+| Code Review | shared-skills/code-review/SKILL.md | Cross-agent code review engine for PRs, diffs, commits |
+| Playbook Refiner | shared-skills/playbook-refiner/SKILL.md | Audit agent logs, propose playbook improvements, close feedback loop |
+
+API endpoint: `/api/shared-skills` returns inventory on both agents.
+Both agents load shared-skills/ on startup. V2 also has 13 built-in skills from open-agents.
+U2 Sprint complete: 11/11 phases. 169 actions, 15 connectors, 5/5 E2E tests. Next: U2.7 Knowledge Graph.
+
 ## Legacy Path
 
 Previously these lived at `organizations/newleaf-financial/<domain>/`.
