@@ -1,0 +1,46 @@
+{
+  "$schema": "https://raw.githubusercontent.com/juspay/hyperswitch-mcp/main/schema.json",
+  "name": "hyperswitch-mcp-server",
+  "version": "1.0.0",
+  "description": "Hyperswitch MCP server for standard payment operations. Covers payment CRUD, refunds, and customer management. Custom client.ts adds gateway failover, CoF audit, and webhook management.",
+  "vendor": "juspay/hyperswitch",
+  "repository": "https://github.com/juspay/hyperswitch-mcp",
+  "transport": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@juspay/hyperswitch-mcp"]
+  },
+  "env": {
+    "HYPERSWITCH_API_KEY": "${HYPERSWITCH_API_KEY}",
+    "HYPERSWITCH_BASE_URL": "${HYPERSWITCH_BASE_URL}"
+  },
+  "capabilities": {
+    "native": [
+      "payments.create",
+      "payments.retrieve",
+      "payments.capture",
+      "payments.cancel",
+      "payments.list",
+      "payment_methods.list",
+      "payment_methods.retrieve",
+      "customers.create",
+      "customers.retrieve",
+      "customers.update",
+      "refunds.create",
+      "refunds.retrieve",
+      "refunds.list",
+      "subscriptions.create",
+      "subscriptions.retrieve",
+      "subscriptions.update",
+      "subscriptions.cancel"
+    ],
+    "custom_only": [
+      "gateway_failover",
+      "cof_audit",
+      "list_events",
+      "retry_event",
+      "delete_payment_method"
+    ]
+  },
+  "notes": "Hyperswitch MCP covers standard payment operations through the Hyperswitch API. Custom client.ts adds NMI connector routing, gateway failover, CoF audit trails, and webhook event management."
+}
