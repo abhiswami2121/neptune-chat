@@ -1,0 +1,44 @@
+{
+  "entity_type": "capability",
+  "entity_id": "skills/skill-author",
+  "version": "1.0.0",
+  "graph_version": "4d-v1",
+  "directions": {
+    "associated_playbooks": [
+      { "ref": "playbooks/engineering", "relationship": "domain_alignment" }
+    ],
+    "associated_skills": [
+      { "ref": "capabilities/self-coding", "relationship": "code_generation" },
+      { "ref": "connectors/github", "relationship": "version_control" },
+      { "ref": "connectors/vercel", "relationship": "deployment" }
+    ],
+    "exposed_functions": [
+      "create-connector-pack",
+      "wrap-api-endpoint",
+      "update-playbook-md",
+      "ingest-api-docs",
+      "regenerate-skill-index",
+      "update-master-registry"
+    ],
+    "runtime_types": ["node", "vercel-serverless"],
+    "intent_tags": [
+      "skill creation",
+      "connector pack",
+      "API wrapping",
+      "scaffolding",
+      "code generation",
+      "meta-tooling",
+      "self-extending"
+    ]
+  },
+  "metadata": {
+    "domain": "engineering",
+    "type": "capability",
+    "category": "meta",
+    "function_count": 6,
+    "description": "Autonomously creates new skill packs (connectors, custom skills), wires them into the file tree, updates playbooks, and regenerates indexes.",
+    "requires_v2_handoff": true,
+    "generated_by": "U2.5.A skill-author self-bootstrap",
+    "generated_at": "2026-06-12T06:00:00.000Z"
+  }
+}
