@@ -12,6 +12,15 @@ import {
 } from "@/lib/connectors/inventory";
 import { ConnectorsClient } from "./client";
 
+/** U2.3: Per-connector comprehensive action counts */
+const U23_ACTION_COUNTS: Record<string, number> = {
+  base44: 63,
+  slack: 27,
+  nmi: 41,
+  hyperswitch: 22,
+  vapi: 16,
+};
+
 export default async function ConnectorsPage() {
   // Force dynamic rendering to bypass CDN cache
   cookies();
@@ -29,6 +38,8 @@ export default async function ConnectorsPage() {
 
   const connectors = manifests.map((m) => {
     const inventory = getInventoryEntry(m.id);
+    /** U2.3: Comprehensive action count from client.ts */
+    const u23Actions = U23_ACTION_COUNTS[m.id] ?? 0;
     return {
       id: m.id,
       name: m.name,
@@ -36,6 +47,8 @@ export default async function ConnectorsPage() {
       brandColor: m.brandColor,
       capabilities: m.capabilities, // pass full capability objects
       toolCount: m.capabilities.length,
+      /** U2.3: Comprehensive action count (separate from gatekeeper tool count) */
+      u23Actions,
       envKeys: m.envKeys,
       status: m.getStatus(),
       docs: m.docs,
@@ -58,6 +71,7 @@ export default async function ConnectorsPage() {
       brandColor: "#6366f1",
       capabilities: [],
       toolCount: vpsInventory.wrapped,
+      u23Actions: 0,
       envKeys: [],
       status: { connected: true, message: `${vpsInventory.wrapped} of ${vpsInventory.total}+ functions wrapped` },
       docs: undefined,

@@ -232,6 +232,15 @@ export function ConnectorsClient({ connectors, counts, inventory }: Props) {
                   statusMessage={c.status.message}
                   toolCount={c.toolCount}
                 />
+                {/* U2.3: Comprehensive action count badge */}
+                {(c as any).u23Actions > 0 && (
+                  <div className="flex items-center gap-1.5 px-3 py-1 -mt-1">
+                    <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full">
+                      {(c as any).u23Actions} actions
+                    </span>
+                    <span className="text-[10px] text-muted-foreground">via execute_skill</span>
+                  </div>
+                )}
                 {/* U1.3: Per-connector wrap progress bar */}
                 {c.wrapped !== undefined && c.total !== undefined && (
                   <WrapProgressBar
