@@ -3,66 +3,68 @@
 Auto-generated master index of all skills, connectors, and capabilities.  
 Source of truth for the Progressive Disclosure skill loading system (U2).
 
-## 📚 Playbooks (11 domains)
+*Regenerated: 2026-06-12T06:01:07.793Z by skill-author/regenerate-skill-index*
+
+## 📚 Playbooks (10 domains)
 
 | Domain | Path | Playbook File |
 |--------|------|---------------|
+| HR | playbooks/HR/ | playbook-HR.md |
 | Agent Orchestration | playbooks/agent-orchestration/ | playbook-agent-orchestration.md |
 | Billing | playbooks/billing/ | playbook-billing.md |
 | Customer Support | playbooks/customer-support/ | playbook-customer-support.md |
-| Deploy (Vercel + GitHub) | playbooks/deploy-vercel-github/ | playbook-deploy.md |
 | Disputes | playbooks/disputes/ | playbook-disputes.md |
 | Engineering | playbooks/engineering/ | playbook-engineering.md |
-| HR | playbooks/HR/ | playbook-HR.md |
 | Marketing | playbooks/marketing/ | playbook-marketing.md |
 | Reporting | playbooks/reporting/ | playbook-reporting.md |
 | Vercel Discipline | playbooks/vercel-discipline/ | playbook-vercel-discipline.md |
 | VPS Ops | playbooks/vps-ops/ | playbook-vps-ops.md |
 
-## 🔌 Connectors (13 integration packs)
+## 🔌 Connectors (14 integration packs)
 
 | Connector | Path | Domain | MCP | Description |
 |-----------|------|--------|-----|-------------|
-| Base44 CRM | connectors/base44/ | customer-enrollment | - | Entity queries, customer 360, reporting hub |
-| Slack | connectors/slack/ | comms | - | Channel messaging, history search, notifications |
-| NMI Payments | connectors/nmi/ | billing-flow | - | Card vault, recurring billing, transaction queries |
-| Hyperswitch | connectors/hyperswitch/ | billing-flow | - | Payment orchestration, payment links, webhooks |
+| Affy | connectors/affy/ | billing-flow | - | Chargeback disputes — affidavits, evidence, and defense automation |
+| Base44 | connectors/base44/ | customer-enrollment | - | Entity queries, customer 360, reporting hub, and function invocation |
+| Custom-skills | connectors/custom-skills/ | agent-orchestration | - | Pure non-API capabilities — playbook refinement, code review, self-coding, research, and response formatting. No external API, operates on local filesystem and knowledge graph. |
+| Forth | connectors/forth/ | credit-disputes | - | Debt Protection Program — dispute management and credit repair |
+| Ghl | connectors/ghl/ | customer-comms | - | CRM — contacts, SMS, email, conversations, and pipeline |
+| Github | connectors/github/ | engineering | - | Repo access, code search, PR management, and V2 coding handoff |
+| Hyperswitch | connectors/hyperswitch/ | billing-flow | ✓ | Self-hosted payment orchestration — NMI connector, payment links, webhooks |
 | Linear | connectors/linear/ | engineering | - | Issue tracking and project management |
-| GitHub | connectors/github/ | engineering | - | Repo access, PR management, V2 coding handoff |
-| Vapi Voice AI | connectors/vapi/ | support-triage | - | Call logs, transcripts, agent analytics |
-| GHL CRM | connectors/ghl/ | customer-comms | - | Contacts, SMS, email, pipeline |
-| Forth Credit | connectors/forth/ | credit-disputes | - | Dispute management, credit repair |
-| Vercel Deploy | connectors/vercel/ | engineering | - | Projects, deployments, webhooks |
-| Wiki | connectors/wiki/ | reporting | - | Karpathy-style second brain |
-| Affy Chargebacks | connectors/affy/ | billing-flow | - | Chargeback disputes and defense |
-| MCP Hub | connectors/mcp-hub/ | mcp-edits | - | Multi-server MCP aggregator |
+| Mcp-hub | connectors/mcp-hub/ | mcp-edits | - | Multi-server MCP aggregator — GitHub, Filesystem, Brave Search |
+| Nmi | connectors/nmi/ | billing-flow | - | Card vault, recurring billing, and transaction queries via Hyperswitch |
+| Slack | connectors/slack/ | comms | ✓ | Channel messaging, history search, and notifications |
+| Vapi | connectors/vapi/ | support-triage | - | Voice AI — call logs, transcripts, and agent analytics |
+| Vercel | connectors/vercel/ | engineering | - | Manage Vercel projects, deployments, build logs, and webhook events |
+| Wiki | connectors/wiki/ | reporting | - | Karpathy-style second brain — ingest, query, lint, and manage knowledge |
 
 ## ✨ Capabilities (7 agent skills)
 
 | Skill | Path | Domain |
 |-------|------|--------|
-| Artifact Response Pattern | skills/capabilities/artifact-response-pattern/ | coding |
-| Code Review | skills/capabilities/code-review/ | coding |
-| Deploy Yourself | skills/capabilities/deploy-yourself/ | engineering |
-| Playbook Refiner | skills/capabilities/playbook-refiner/ | agent-orchestration |
-| Research | skills/capabilities/research/ | reporting |
-| Response Formatting | skills/capabilities/response-formatting/ | support-triage |
-| Self Coding | skills/capabilities/self-coding/ | coding |
+| artifact-response-pattern | skills/capabilities/artifact-response-pattern/ | coding |
+| code-review | skills/capabilities/code-review/ | coding |
+| deploy-yourself | skills/capabilities/deploy-yourself/ | engineering |
+| playbook-refiner | skills/capabilities/playbook-refiner/ | agent-orchestration |
+| research | skills/capabilities/research/ | reporting |
+| response-formatting | skills/capabilities/response-formatting/ | support-triage |
+| self-coding | skills/capabilities/self-coding/ | engineering |
 
 ## 🔧 Functions (10 domain functions)
 
 | Function | Path | Domain |
 |----------|------|--------|
-| Billing Event Logger | skills/functions/billing-event-logger/ | billing-flow |
-| Build Customer VDE | skills/functions/build-customer-vde/ | customer-enrollment |
-| Calculate Refund Eligibility | skills/functions/calculate-refund-eligibility/ | billing-flow |
-| CoF Health Audit | skills/functions/cof-health-audit/ | billing-flow |
-| Execute with Post-Verify | skills/functions/execute-with-post-verify/ | compliance-audit |
-| Extract Customer PII | skills/functions/extract-customer-pii/ | compliance-audit |
-| Generate AI Email | skills/functions/generate-ai-email/ | customer-comms |
-| Parse FCRA Credit Report | skills/functions/parse-fcra-credit-report/ | credit-disputes |
-| Resolve Customer Identity | skills/functions/resolve-customer-identity/ | customer-enrollment |
-| Validate Action | skills/functions/validate-action/ | compliance-audit |
+| billing-event-logger | skills/functions/billing-event-logger/ | billing-flow |
+| build-customer-vde | skills/functions/build-customer-vde/ | customer-enrollment |
+| calculate-refund-eligibility | skills/functions/calculate-refund-eligibility/ | billing-flow |
+| cof-health-audit | skills/functions/cof-health-audit/ | billing-flow |
+| execute-with-post-verify | skills/functions/execute-with-post-verify/ | compliance-audit |
+| extract-customer-pii | skills/functions/extract-customer-pii/ | compliance-audit |
+| generate-ai-email | skills/functions/generate-ai-email/ | customer-comms |
+| parse-fcra-credit-report | skills/functions/parse-fcra-credit-report/ | credit-disputes |
+| resolve-customer-identity | skills/functions/resolve-customer-identity/ | customer-enrollment |
+| validate-action | skills/functions/validate-action/ | compliance-audit |
 
 ## 🔗 Connector Skills (13 per-connector docs)
 
@@ -85,17 +87,19 @@ Source of truth for the Progressive Disclosure skill loading system (U2).
 ## Load via `load_skill`
 
 ```
-playbooks/billing
-connectors/slack
-capabilities/self-coding
-skills/functions/validate-action
+playbooks/HR
+connectors/affy
+capabilities/artifact-response-pattern
+skills/functions/billing-event-logger
 ```
 
 ## Totals
 
-- **11** playbook domains
-- **13** connector integration packs
+- **10** playbook domains
+- **14** connector integration packs
 - **7** capabilities
 - **10** functions
 - **13** connector skill docs
 - **54** total loadable skill paths
+
+*Regenerated 2026-06-12T06:01:07.794Z*

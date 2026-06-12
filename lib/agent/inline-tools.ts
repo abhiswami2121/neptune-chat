@@ -1035,6 +1035,64 @@ export const viewFile = tool({
   },
 });
 
+// ── U2.5.B: Skill-Author Safety Audit ──────────────────────────────────────
+
+const FORBIDDEN_CONNECTORS = ["base44", "nmi", "slack", "hyperswitch", "vapi"];
+
+/**
+ * Audit a skill-author script result for safety.
+ * Returns {pass: true} if no forbidden connectors were modified.
+ */
+function auditSkillAuthorResult(
+  scriptName: string,
+  result: { success?: boolean; data?: Record<string, unknown>; error?: string }
+): { pass: boolean; note: string } {
+  const data = result?.data;
+  if (!data) return { pass: true, note: "No data to audit." };
+
+  // Check for forbidden connector names in output
+  const dataStr = JSON.stringify(data);
+  for (const forbidden of FORBIDDEN_CONNECTORS) {
+    if (dataStr.includes(forbidden)) {
+      return {
+        pass: false,
+        note: `SAFETY: Script '${scriptName}' may have referenced forbidden connector '${forbidden}'. Production connectors must not be modified by skill-author.`,
+      };
+    }
+  }
+
+  // Check file_updated / files_created paths
+  for (const key of ["file_updated", "files_created", "output_path"]) {
+    const val = data[key];
+    if (typeof val === "string") {
+      for (const forbidden of FORBIDDEN_CONNECTORS) {
+        if (val.includes(`connectors/${forbidden}`)) {
+          return {
+            pass: false,
+            note: `SAFETY: Script '${scriptName}' wrote to forbidden path containing 'connectors/${forbidden}'. Roll back this change.`,
+          };
+        }
+      }
+    }
+    if (Array.isArray(val)) {
+      for (const item of val) {
+        if (typeof item === "string") {
+          for (const forbidden of FORBIDDEN_CONNECTORS) {
+            if (item.includes(`connectors/${forbidden}`)) {
+              return {
+                pass: false,
+                note: `SAFETY: Script '${scriptName}' created file in forbidden path containing 'connectors/${forbidden}'. Roll back this change.`,
+              };
+            }
+          }
+        }
+      }
+    }
+  }
+
+  return { pass: true, note: "Safety audit passed — no forbidden connectors modified." };
+}
+
 /**
  * execute_skill — Load and execute a skill from the knowledge base.
  *
@@ -1043,10 +1101,15 @@ export const viewFile = tool({
  * and returns structured execution context. The agent then follows the
  * skill's prescribed steps.
  *
+ * U2.5.B: Also resolves and executes skill-author scripts.
+ * When skill_name starts with "skills/skill-author/scripts/", it
+ * dynamically imports the script module and calls execute(params).
+ *
  * Skill resolution order:
- *   1. skills/<category>/<name>/SKILL.md (local repo skills)
- *   2. jarvis/cortex/skills/<name>.md (VPS cortex)
- *   3. playbooks/<domain>/playbook-*.md (domain playbooks)
+ *   1. skills/skill-author/scripts/<name>.ts → dynamic import + execute()
+ *   2. skills/<category>/<name>/SKILL.md (local repo skills)
+ *   3. jarvis/cortex/skills/<name>.md (VPS cortex)
+ *   4. playbooks/<domain>/playbook-*.md (domain playbooks)
  */
 export const executeSkill = tool({
   description:
@@ -1054,13 +1117,16 @@ export const executeSkill = tool({
     "Loads the skill's SKILL.md, parses its YAML frontmatter for tools/input/output definitions, " +
     "and returns the full execution contract. Use this when you need to perform a domain-specific " +
     "operation that has a documented skill procedure. " +
-    "Examples: 'billing-flow-retry', 'refund-customer', 'cof-health-audit', 'credit-dispute-round-1'. " +
-    "Use listSkills to discover available skills.",
+    "Also supports skill-author scripts: pass 'skills/skill-author/scripts/<script-name>' " +
+    "to run scaffolding/indexing tools. " +
+    "Examples: 'billing-flow-retry', 'cof-health-audit', 'skills/skill-author/scripts/create-connector-pack'. " +
+    "Use listSkills or listPlaybooks to discover available skills.",
   inputSchema: z.object({
     skill_name: z
       .string()
       .describe(
-        "Name of the skill to execute. E.g., 'billing-flow-retry', 'cof-health-audit', 'refund-customer'. " +
+        "Name of the skill to execute. Can be a domain skill name (e.g., 'billing-flow-retry') " +
+        "OR a skill-author script path (e.g., 'skills/skill-author/scripts/create-connector-pack'). " +
         "Use listSkills or listPlaybooks to discover available skills."
       ),
     params: z
@@ -1069,6 +1135,75 @@ export const executeSkill = tool({
       .describe("Optional parameters to pass to the skill execution"),
   }),
   execute: async ({ skill_name, params }) => {
+    // ── U2.5.B: Skill-author script execution path ────────────────────────
+    // Check if this is a skill-author script invocation
+    const skillAuthorScriptMatch = skill_name.match(
+      /^skills\/skill-author\/scripts\/([a-z][\w-]+)(?:\.ts)?$/i
+    );
+
+    if (skillAuthorScriptMatch) {
+      const scriptName = skillAuthorScriptMatch[1];
+      const validScripts = [
+        "create-connector-pack",
+        "wrap-api-endpoint",
+        "update-playbook-md",
+        "ingest-api-docs",
+        "regenerate-skill-index",
+        "update-master-registry",
+      ];
+
+      if (!validScripts.includes(scriptName)) {
+        return {
+          skill_name,
+          loaded: false,
+          error: `Unknown skill-author script: '${scriptName}'. Available: ${validScripts.join(", ")}`,
+          hint: "Valid skill-author scripts: create-connector-pack, wrap-api-endpoint, update-playbook-md, ingest-api-docs, regenerate-skill-index, update-master-registry.",
+        };
+      }
+
+      try {
+        // Dynamic import the script module from the skills/ directory
+        const scriptPath = `../../../skills/skill-author/scripts/${scriptName}`;
+        const mod = await import(scriptPath);
+
+        if (typeof mod.default !== "function" && typeof mod.execute !== "function") {
+          return {
+            skill_name,
+            loaded: false,
+            error: `Skill-author script '${scriptName}' does not export an execute function. Found: ${Object.keys(mod).join(", ")}`,
+          };
+        }
+
+        const execFn = mod.execute || mod.default;
+        const result = await execFn(params || {});
+
+        // Safety audit: verify the script didn't touch forbidden connectors
+        const safetyCheck = auditSkillAuthorResult(scriptName, result);
+
+        return {
+          skill_name,
+          loaded: true,
+          source: "skill-author-script",
+          script_name: scriptName,
+          script_path: scriptPath,
+          execution_result: result,
+          safety_pass: safetyCheck.pass,
+          safety_note: safetyCheck.note,
+          hint: safetyCheck.pass
+            ? `Script '${scriptName}' executed successfully. Check execution_result for details.`
+            : `Script executed but safety warning: ${safetyCheck.note}`,
+        };
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        return {
+          skill_name,
+          loaded: false,
+          error: `Failed to execute skill-author script '${scriptName}': ${msg}`,
+          hint: "Check that the script file exists and TypeScript compilation succeeds. Scripts may need to run locally (pnpm dev) or via Vercel Sandbox.",
+        };
+      }
+    }
+
     // Resolve skill paths using same logic as loadSkill
     const skillPath = skill_name;
     const paths = [

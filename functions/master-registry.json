@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
-  "generated": "2026-06-12T04:21:46.940Z",
-  "total_functions": 199,
+  "generated": "2026-06-12T06:01:09.053Z",
+  "total_functions": 248,
   "connectors": [
     "base44",
     "nmi",
@@ -4577,6 +4577,861 @@
       "associated_playbooks": [],
       "intent_tags": [],
       "category": "custom-skills"
+    },
+    {
+      "function_name": "create_payment\", \"get_payment\", \"capture_payment\", \"cancel_payment\", \"list_payments",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"create_payment\", \"get_payment\", \"capture_payment\", \"cancel_payment\", \"list_payments\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_payment\", \"get_payment\", \"capture_payment\", \"cancel_payment\", \"list_payments",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "list_payment_methods\", \"get_payment_method\", \"delete_payment_method",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"list_payment_methods\", \"get_payment_method\", \"delete_payment_method\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "list_payment_methods\", \"get_payment_method\", \"delete_payment_method",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "create_customer\", \"get_customer\", \"update_customer",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"create_customer\", \"get_customer\", \"update_customer\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_customer\", \"get_customer\", \"update_customer",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "create_refund\", \"get_refund\", \"list_refunds",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"create_refund\", \"get_refund\", \"list_refunds\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_refund\", \"get_refund\", \"list_refunds",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "create_subscription\", \"get_subscription\", \"update_subscription\", \"cancel_subscription",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"create_subscription\", \"get_subscription\", \"update_subscription\", \"cancel_subscription\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_subscription\", \"get_subscription\", \"update_subscription\", \"cancel_subscription",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "list_events\", \"retry_event",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"list_events\", \"retry_event\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "list_events\", \"retry_event",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "gateway_failover\", \"cof_audit",
+      "execution_signature": "execute_skill(\"connectors/hyperswitch\", \"gateway_failover\", \"cof_audit\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/hyperswitch",
+      "parent_skill": "connectors/hyperswitch",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "gateway_failover\", \"cof_audit",
+        "hyperswitch",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "hyperswitch"
+    },
+    {
+      "function_name": "health_check\", \"query_transactions\", \"get_transaction",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"health_check\", \"query_transactions\", \"get_transaction\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "health_check\", \"query_transactions\", \"get_transaction",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "query_vault\", \"query_subscription\", \"query_subscriptions_bulk",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"query_vault\", \"query_subscription\", \"query_subscriptions_bulk\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "query_vault\", \"query_subscription\", \"query_subscriptions_bulk",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "create_vault_from_token\", \"update_vault\", \"delete_card_from_vault\", \"set_primary_card",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"create_vault_from_token\", \"update_vault\", \"delete_card_from_vault\", \"set_primary_card\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_vault_from_token\", \"update_vault\", \"delete_card_from_vault\", \"set_primary_card",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "create_subscription\", \"update_subscription\", \"delete_subscription",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"create_subscription\", \"update_subscription\", \"delete_subscription\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_subscription\", \"update_subscription\", \"delete_subscription",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "pause_subscription\", \"reactivate_subscription",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"pause_subscription\", \"reactivate_subscription\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "pause_subscription\", \"reactivate_subscription",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "one_time_charge\", \"cit_vault_sale\", \"day_zero_auth\", \"recover_charge",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"one_time_charge\", \"cit_vault_sale\", \"day_zero_auth\", \"recover_charge\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "one_time_charge\", \"cit_vault_sale\", \"day_zero_auth\", \"recover_charge",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "cof_health_scan\", \"cof_get_results\", \"cof_deep_inspect\", \"cof_recover",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"cof_health_scan\", \"cof_get_results\", \"cof_deep_inspect\", \"cof_recover\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "cof_health_scan\", \"cof_get_results\", \"cof_deep_inspect\", \"cof_recover",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "cof_relink_sub\", \"cof_fix_mit_flags\", \"cof_link_day_zero\", \"cof_provision_token",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"cof_relink_sub\", \"cof_fix_mit_flags\", \"cof_link_day_zero\", \"cof_provision_token\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "cof_relink_sub\", \"cof_fix_mit_flags\", \"cof_link_day_zero\", \"cof_provision_token",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "gv_validate_card\", \"gv_create_vault\", \"gv_mit_charge\", \"gv_cit_charge",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"gv_validate_card\", \"gv_create_vault\", \"gv_mit_charge\", \"gv_cit_charge\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "gv_validate_card\", \"gv_create_vault\", \"gv_mit_charge\", \"gv_cit_charge",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "gv_inspect\", \"gv_full_test",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"gv_inspect\", \"gv_full_test\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "gv_inspect\", \"gv_full_test",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "create_invoice\", \"send_invoice\", \"close_invoice",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"create_invoice\", \"send_invoice\", \"close_invoice\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_invoice\", \"send_invoice\", \"close_invoice",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "create_product\", \"update_product\", \"delete_product",
+      "execution_signature": "execute_skill(\"connectors/nmi\", \"create_product\", \"update_product\", \"delete_product\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/nmi",
+      "parent_skill": "connectors/nmi",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support"
+      ],
+      "intent_tags": [
+        "create_product\", \"update_product\", \"delete_product",
+        "nmi",
+        "billing-flow",
+        "connector"
+      ],
+      "category": "nmi"
+    },
+    {
+      "function_name": "list_channels\", \"get_channel\", \"channel_history\", \"thread_replies",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"list_channels\", \"get_channel\", \"channel_history\", \"thread_replies\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "list_channels\", \"get_channel\", \"channel_history\", \"thread_replies",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "search_messages\", \"list_users\", \"get_user\", \"get_user_by_email",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"search_messages\", \"list_users\", \"get_user\", \"get_user_by_email\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "search_messages\", \"list_users\", \"get_user\", \"get_user_by_email",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "get_reactions\", \"get_channel_members\", \"get_team_info\", \"get_user_presence",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"get_reactions\", \"get_channel_members\", \"get_team_info\", \"get_user_presence\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "get_reactions\", \"get_channel_members\", \"get_team_info\", \"get_user_presence",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "send_message\", \"send_thread_reply\", \"send_dm\", \"add_reaction",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"send_message\", \"send_thread_reply\", \"send_dm\", \"add_reaction\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "send_message\", \"send_thread_reply\", \"send_dm\", \"add_reaction",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "remove_reaction\", \"update_message\", \"delete_message\", \"set_topic",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"remove_reaction\", \"update_message\", \"delete_message\", \"set_topic\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "remove_reaction\", \"update_message\", \"delete_message\", \"set_topic",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "set_purpose\", \"upload_file\", \"schedule_message\", \"invite_to_channel",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"set_purpose\", \"upload_file\", \"schedule_message\", \"invite_to_channel\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "set_purpose\", \"upload_file\", \"schedule_message\", \"invite_to_channel",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "bulk_send\", \"bulk_react",
+      "execution_signature": "execute_skill(\"connectors/slack\", \"bulk_send\", \"bulk_react\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/slack",
+      "parent_skill": "connectors/slack",
+      "associated_playbooks": [
+        "playbooks/billing",
+        "playbooks/customer-support",
+        "playbooks/disputes",
+        "playbooks/reporting",
+        "playbooks/agent-orchestration",
+        "playbooks/deploy-vercel-github",
+        "playbooks/marketing",
+        "playbooks/HR"
+      ],
+      "intent_tags": [
+        "bulk_send\", \"bulk_react",
+        "slack",
+        "comms",
+        "connector"
+      ],
+      "category": "slack"
+    },
+    {
+      "function_name": "list_calls\", \"get_call\", \"create_call\", \"end_call",
+      "execution_signature": "execute_skill(\"connectors/vapi\", \"list_calls\", \"get_call\", \"create_call\", \"end_call\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/vapi",
+      "parent_skill": "connectors/vapi",
+      "associated_playbooks": [
+        "playbooks/customer-support",
+        "playbooks/marketing"
+      ],
+      "intent_tags": [
+        "list_calls\", \"get_call\", \"create_call\", \"end_call",
+        "vapi",
+        "support-triage",
+        "connector"
+      ],
+      "category": "vapi"
+    },
+    {
+      "function_name": "list_assistants\", \"get_assistant\", \"create_assistant\", \"update_assistant",
+      "execution_signature": "execute_skill(\"connectors/vapi\", \"list_assistants\", \"get_assistant\", \"create_assistant\", \"update_assistant\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/vapi",
+      "parent_skill": "connectors/vapi",
+      "associated_playbooks": [
+        "playbooks/customer-support",
+        "playbooks/marketing"
+      ],
+      "intent_tags": [
+        "list_assistants\", \"get_assistant\", \"create_assistant\", \"update_assistant",
+        "vapi",
+        "support-triage",
+        "connector"
+      ],
+      "category": "vapi"
+    },
+    {
+      "function_name": "get_analytics_overview\", \"get_lead_funnel\", \"get_call_quality",
+      "execution_signature": "execute_skill(\"connectors/vapi\", \"get_analytics_overview\", \"get_lead_funnel\", \"get_call_quality\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/vapi",
+      "parent_skill": "connectors/vapi",
+      "associated_playbooks": [
+        "playbooks/customer-support",
+        "playbooks/marketing"
+      ],
+      "intent_tags": [
+        "get_analytics_overview\", \"get_lead_funnel\", \"get_call_quality",
+        "vapi",
+        "support-triage",
+        "connector"
+      ],
+      "category": "vapi"
+    },
+    {
+      "function_name": "list_transfers\", \"get_transfer_outcome",
+      "execution_signature": "execute_skill(\"connectors/vapi\", \"list_transfers\", \"get_transfer_outcome\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/vapi",
+      "parent_skill": "connectors/vapi",
+      "associated_playbooks": [
+        "playbooks/customer-support",
+        "playbooks/marketing"
+      ],
+      "intent_tags": [
+        "list_transfers\", \"get_transfer_outcome",
+        "vapi",
+        "support-triage",
+        "connector"
+      ],
+      "category": "vapi"
+    },
+    {
+      "function_name": "list_assistant_tools\", \"update_assistant_tools",
+      "execution_signature": "execute_skill(\"connectors/vapi\", \"list_assistant_tools\", \"update_assistant_tools\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/vapi",
+      "parent_skill": "connectors/vapi",
+      "associated_playbooks": [
+        "playbooks/customer-support",
+        "playbooks/marketing"
+      ],
+      "intent_tags": [
+        "list_assistant_tools\", \"update_assistant_tools",
+        "vapi",
+        "support-triage",
+        "connector"
+      ],
+      "category": "vapi"
+    },
+    {
+      "function_name": "artifact-response-pattern",
+      "execution_signature": "execute_skill(\"capabilities/artifact-response-pattern\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/artifact-response-pattern",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "artifact-response-pattern",
+        "coding",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "code-review",
+      "execution_signature": "execute_skill(\"capabilities/code-review\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/code-review",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "code-review",
+        "coding",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "deploy-yourself",
+      "execution_signature": "execute_skill(\"capabilities/deploy-yourself\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/deploy-yourself",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "deploy-yourself",
+        "engineering",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "playbook-refiner",
+      "execution_signature": "execute_skill(\"capabilities/playbook-refiner\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/playbook-refiner",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "playbook-refiner",
+        "agent-orchestration",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "research",
+      "execution_signature": "execute_skill(\"capabilities/research\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/research",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "research",
+        "reporting",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "response-formatting",
+      "execution_signature": "execute_skill(\"capabilities/response-formatting\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/response-formatting",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "response-formatting",
+        "support-triage",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "self-coding",
+      "execution_signature": "execute_skill(\"capabilities/self-coding\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "capabilities/self-coding",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "self-coding",
+        "engineering",
+        "capability"
+      ],
+      "category": "capabilities"
+    },
+    {
+      "function_name": "billing-event-logger",
+      "execution_signature": "execute_skill(\"skills/functions/billing-event-logger\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/billing-event-logger",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "billing-event-logger",
+        "billing-flow",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "build-customer-vde",
+      "execution_signature": "execute_skill(\"skills/functions/build-customer-vde\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/build-customer-vde",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "build-customer-vde",
+        "customer-enrollment",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "calculate-refund-eligibility",
+      "execution_signature": "execute_skill(\"skills/functions/calculate-refund-eligibility\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/calculate-refund-eligibility",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "calculate-refund-eligibility",
+        "billing-flow",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "cof-health-audit",
+      "execution_signature": "execute_skill(\"skills/functions/cof-health-audit\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/cof-health-audit",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "cof-health-audit",
+        "billing-flow",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "execute-with-post-verify",
+      "execution_signature": "execute_skill(\"skills/functions/execute-with-post-verify\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/execute-with-post-verify",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "execute-with-post-verify",
+        "compliance-audit",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "extract-customer-pii",
+      "execution_signature": "execute_skill(\"skills/functions/extract-customer-pii\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/extract-customer-pii",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "extract-customer-pii",
+        "compliance-audit",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "generate-ai-email",
+      "execution_signature": "execute_skill(\"skills/functions/generate-ai-email\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/generate-ai-email",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "generate-ai-email",
+        "customer-comms",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "parse-fcra-credit-report",
+      "execution_signature": "execute_skill(\"skills/functions/parse-fcra-credit-report\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/parse-fcra-credit-report",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "parse-fcra-credit-report",
+        "credit-disputes",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "resolve-customer-identity",
+      "execution_signature": "execute_skill(\"skills/functions/resolve-customer-identity\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/resolve-customer-identity",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "resolve-customer-identity",
+        "customer-enrollment",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "validate-action",
+      "execution_signature": "execute_skill(\"skills/functions/validate-action\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "functions/validate-action",
+      "associated_playbooks": [],
+      "intent_tags": [
+        "validate-action",
+        "compliance-audit",
+        "function"
+      ],
+      "category": "functions"
+    },
+    {
+      "function_name": "skill-author",
+      "execution_signature": "execute_skill(\"skills/skill-author\")",
+      "runtime_type": "node",
+      "parent_connector": "skills",
+      "parent_skill": "skills/skill-author",
+      "associated_playbooks": [
+        "playbooks/engineering"
+      ],
+      "intent_tags": [
+        "skill creation",
+        "connector",
+        "scaffolding",
+        "meta"
+      ],
+      "category": "meta"
     }
   ]
 }
