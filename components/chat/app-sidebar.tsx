@@ -2,14 +2,12 @@
 
 import {
   BarChart3Icon,
-  BookOpen,
   BrainCircuitIcon,
   KeyRoundIcon,
   MessageSquareIcon,
   PanelLeftIcon,
   PenSquareIcon,
   PlugIcon,
-  Sparkles,
   TrashIcon,
   ZapIcon,
 } from "lucide-react";
@@ -43,6 +41,7 @@ import {
 } from "@/components/ui/sidebar";
 import { cn } from "@/lib/utils";
 import { ConnectorsPanel } from "../sidebar/connectors-panel";
+import { FileTreeNav } from "@/components/file-tree-nav";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -118,11 +117,11 @@ const NAV_ITEMS = [
 ] as const;
 
 const LIBRARY_ITEMS = [
-  { id: "skills", label: "Skills", icon: Sparkles, href: "/skills" },
-  { id: "connectors", label: "Connectors", icon: PlugIcon, href: "/connectors" },
-  { id: "playbooks", label: "Playbooks", icon: BookOpen, href: "/playbooks" },
   { id: "memory", label: "Memory", icon: BrainCircuitIcon, href: "/memory" },
 ] as const;
+
+// FileTreeNav roots rendered in the Library section
+const TREE_ROOTS = ["playbooks", "connectors", "skills"] as const;
 
 export function AppSidebar({
   user,
@@ -272,6 +271,16 @@ export function AppSidebar({
               Library
             </SidebarGroupLabel>
             <SidebarGroupContent>
+              {/* FileTreeNav trees for Playbooks, Connectors, Skills */}
+              {TREE_ROOTS.map((root) => (
+                <FileTreeNav
+                  key={root}
+                  root={root}
+                  collapsed={isCollapsed}
+                  className="px-1"
+                />
+              ))}
+              {/* Memory as regular link */}
               <SidebarMenu>
                 {LIBRARY_ITEMS.map((item) => {
                   const Icon = item.icon;
