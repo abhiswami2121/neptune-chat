@@ -219,16 +219,26 @@ function resolveSkillPaths(skillPath: string): string[] {
     ];
   }
 
+  if (normalized.startsWith("shared-skills/")) {
+    const name = normalized.replace("shared-skills/", "");
+    return [
+      `shared-skills/${name}/SKILL.md`,
+      `shared-skills/${name}/PLAYBOOK.md`,
+    ];
+  }
+
   if (normalized.startsWith("skills/")) {
     const name = normalized.replace("skills/", "");
     return [
+      `shared-skills/${name}/SKILL.md`,
       `jarvis/cortex/skills/${name}.md`,
       `skills/${name}/SKILL.md`,
     ];
   }
 
-  // Bare name — try skills directory + playbooks
+  // Bare name — try shared-skills/ first, then skills, playbooks, prd
   return [
+    `shared-skills/${normalized}/SKILL.md`,
     `jarvis/cortex/skills/${normalized}.md`,
     `jarvis/cortex/skills/${normalized}-skill.md`,
     `skills/capabilities/${normalized}/SKILL.md`,
