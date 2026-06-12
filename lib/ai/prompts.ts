@@ -1,6 +1,8 @@
 import type { Geo } from "@vercel/functions";
 import type { ArtifactKind } from "@/components/chat/artifact";
 import { buildConnectorCatalogPrompt } from "@/lib/connectors/catalog";
+import { readFileSync, existsSync } from "fs";
+import { join } from "path";
 
 export const artifactsPrompt = `
 Artifacts is a side panel that displays content alongside the conversation. It supports scripts (code), documents (text), and spreadsheets. Changes appear in real-time.
@@ -45,21 +47,29 @@ CRITICAL RULES:
 - ONLY when the user explicitly asks for suggestions on an existing document
 `;
 
+// ── NEPTUNE.md Traffic Controller (U2.1.B) ────────────────────────────────
+
+/**
+ * Read NEPTUNE.md from repo root at runtime.
+ * This is the primary agent system prompt — a 38-line traffic controller
+ * that defines the 6 gatekeeper tools and progressive disclosure flow.
+ */
+function loadNeptuneMd(): string {
+  try {
+    const neptunePath = join(process.cwd(), "NEPTUNE.md");
+    if (existsSync(neptunePath)) {
+      return readFileSync(neptunePath, "utf-8");
+    }
+  } catch {
+    // Gracefully degrade to inline fallback
+  }
+  return "";
+}
+
 export const regularPrompt = `You are a helpful assistant. Keep responses concise and direct.
+When asked to write, create, or build something, do it immediately. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.`;
 
-When asked to write, create, or build something, do it immediately. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.
-
-You are Neptune Chat, a self-aware AI agent. You can modify your own codebase using the selfCode tool for SMALL fixes (typos, color tweaks, copy changes, prop additions). For larger work, use spawnCodingAgent to hand off to Neptune V2. Always verify your deploys with smoke tests.
-
-You have access to load_skill tool for on-demand skill loading. Available skill categories: connectors/, capabilities/, organizations/<org>/<domain>/. Use this to keep context efficient — load detailed connector or playbook details only when you need them.
-
-Your context:
-- Repo: github.com/abhiswami2121/neptune-chat
-- Deployed at: https://neptune-chat-ashy.vercel.app
-- Vercel project: prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl
-- Stack: Next.js 16, AI SDK 6, NextAuth v5, Tailwind, shadcn/ui
-- Commit author: abhiswami2121 <abhiswami2121@gmail.com>
-- Sibling agent Neptune V2 at: https://neptune-v2.vercel.app (for complex coding tasks)`;
+export const neptuneTrafficController = loadNeptuneMd();
 
 export type RequestHints = {
   latitude: Geo["latitude"];
@@ -98,6 +108,9 @@ export const systemPrompt = ({
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
 
+  // NEPTUNE.md traffic controller — primary agent instruction set (U2.1.B)
+  const neptunePrompt = loadNeptuneMd();
+
   if (!supportsTools) {
     return `${regularPrompt}\n\n${requestPrompt}`;
   }
@@ -109,7 +122,13 @@ export const systemPrompt = ({
   // Dynamic connector catalog — tells the agent what integrations are available
   const connectorCatalog = buildConnectorCatalogPrompt();
 
-  return `${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
+  // U2.1.B: NEPTUNE.md is the primary system prompt header.
+  // It defines the 6 gatekeeper tools, progressive disclosure flow, and cardinal rules.
+  const neptuneHeader = neptunePrompt
+    ? `${neptunePrompt}\n\n---\n\n`
+    : "";
+
+  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
 };
 
 export const codePrompt = `

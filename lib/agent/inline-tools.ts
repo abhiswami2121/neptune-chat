@@ -946,56 +946,455 @@ export const listIntegrations = tool({
   },
 });
 
+// ── Category 6: Gatekeeper Tools (U2.1.A — Progressive Disclosure) ──────
+
+/**
+ * view_file — Read any file from the filesystem.
+ *
+ * Gatekeeper tool for Pattern A (Documentation-Driven Runtime).
+ * Provides direct file access. Reads from:
+ *   - Local repo files (organizations/, skills/, lib/ etc.) via fs
+ *   - VPS cortex files (jarvis/cortex/, jarvis/prd/) via bridge
+ *
+ * This replaces the need for domain-specific read tools — the agent
+ * loads what it needs on demand via this single gate.
+ */
+export const viewFile = tool({
+  description:
+    "Read any file from the knowledge base or codebase. " +
+    "Use for reading playbooks, skills, PRDs, configuration, or source code. " +
+    "Paths: organizations/<org>/<domain>/playbook-*.md for org playbooks, " +
+    "jarvis/cortex/skills/<name>.md for VPS skills, " +
+    "jarvis/prd/<name>.md for PRD documents, " +
+    "lib/ or app/ for source code.",
+  inputSchema: z.object({
+    path: z
+      .string()
+      .describe(
+        "File path to read. Examples: 'organizations/newleaf-financial/billing/playbook-billing.md', " +
+        "'jarvis/cortex/skills/neptune-v6-agent-patterns.md', " +
+        "'skills/registry.json', 'NEPTUNE.md'. " +
+        "Use list_playbooks to discover available playbook paths."
+      ),
+    maxLength: z
+      .number()
+      .optional()
+      .default(20000)
+      .describe("Maximum characters to return (default 20000, max 50000)"),
+  }),
+  execute: async ({ path: filePath, maxLength }) => {
+    const safeMax = Math.min(maxLength ?? 20000, 50000);
+
+    // VPS bridge paths
+    if (filePath.startsWith("jarvis/")) {
+      const result = await vpsFsRead(filePath);
+      if (result.success && result.content) {
+        return {
+          path: filePath,
+          content: result.content.slice(0, safeMax),
+          truncated: result.content.length > safeMax,
+          length: result.content.length,
+          source: "vps-bridge",
+        };
+      }
+      return {
+        path: filePath,
+        error: `File not found via VPS bridge: ${result.error || "Unknown error"}`,
+        hint: "Try list_playbooks or listSkills to discover available files.",
+      };
+    }
+
+    // Local repo files
+    try {
+      const { readFileSync, existsSync } = await import("fs");
+      const { join } = await import("path");
+      const fullPath = join(process.cwd(), filePath);
+
+      if (!existsSync(fullPath)) {
+        return {
+          path: filePath,
+          error: `File not found at ${filePath}. Check the path and try again.`,
+          hint: "Use list_playbooks to discover playbook paths, or try reading from jarvis/cortex/ for VPS files.",
+        };
+      }
+
+      const content = readFileSync(fullPath, "utf-8");
+      return {
+        path: filePath,
+        content: content.slice(0, safeMax),
+        truncated: content.length > safeMax,
+        length: content.length,
+        source: "local-repo",
+      };
+    } catch (err) {
+      return {
+        path: filePath,
+        error: `Failed to read file: ${err instanceof Error ? err.message : "Unknown"}`,
+      };
+    }
+  },
+});
+
+/**
+ * execute_skill — Load and execute a skill from the knowledge base.
+ *
+ * Gatekeeper tool for Pattern A. Loads a SKILL.md (with YAML frontmatter
+ * per Anthropic Agent Skills Spec), parses its tools/input/output contract,
+ * and returns structured execution context. The agent then follows the
+ * skill's prescribed steps.
+ *
+ * Skill resolution order:
+ *   1. skills/<category>/<name>/SKILL.md (local repo skills)
+ *   2. jarvis/cortex/skills/<name>.md (VPS cortex)
+ *   3. organizations/<org>/<domain>/playbook-*.md (org playbooks)
+ */
+export const executeSkill = tool({
+  description:
+    "Execute a named skill from the knowledge base. " +
+    "Loads the skill's SKILL.md, parses its YAML frontmatter for tools/input/output definitions, " +
+    "and returns the full execution contract. Use this when you need to perform a domain-specific " +
+    "operation that has a documented skill procedure. " +
+    "Examples: 'billing-flow-retry', 'refund-customer', 'cof-health-audit', 'credit-dispute-round-1'. " +
+    "Use listSkills to discover available skills.",
+  inputSchema: z.object({
+    skill_name: z
+      .string()
+      .describe(
+        "Name of the skill to execute. E.g., 'billing-flow-retry', 'cof-health-audit', 'refund-customer'. " +
+        "Use listSkills or listPlaybooks to discover available skills."
+      ),
+    params: z
+      .record(z.unknown())
+      .optional()
+      .describe("Optional parameters to pass to the skill execution"),
+  }),
+  execute: async ({ skill_name, params }) => {
+    // Resolve skill paths using same logic as loadSkill
+    const skillPath = skill_name;
+    const paths = [
+      `skills/${skillPath}/SKILL.md`,
+      `jarvis/cortex/skills/${skillPath}.md`,
+      `jarvis/cortex/skills/${skillPath}-skill.md`,
+      `jarvis/cortex/skills/${skillPath}-connector.md`,
+      `jarvis/prd/${skillPath}.md`,
+    ];
+
+    let skillContent = "";
+    let foundPath = "";
+    let source = "";
+
+    // Try local files first
+    try {
+      const { readFileSync, existsSync } = await import("fs");
+      const { join } = await import("path");
+
+      for (const p of paths.filter(p => !p.startsWith("jarvis/"))) {
+        const fullPath = join(process.cwd(), p);
+        if (existsSync(fullPath)) {
+          skillContent = readFileSync(fullPath, "utf-8");
+          foundPath = p;
+          source = "local-repo";
+          break;
+        }
+      }
+    } catch {
+      // Fall through to VPS bridge
+    }
+
+    // Try VPS bridge if not found locally
+    if (!skillContent) {
+      for (const p of paths.filter(p => p.startsWith("jarvis/"))) {
+        const result = await vpsFsRead(p);
+        if (result.success && result.content) {
+          skillContent = result.content;
+          foundPath = p;
+          source = "vps-bridge";
+          break;
+        }
+      }
+    }
+
+    if (!skillContent) {
+      return {
+        skill_name,
+        loaded: false,
+        error: `Skill "${skill_name}" not found. Tried: ${paths.join(", ")}`,
+        hint: "Use listSkills or listPlaybooks to discover available skills.",
+      };
+    }
+
+    // Parse YAML frontmatter (Anthropic Agent Skills Spec)
+    let frontmatter: Record<string, unknown> = {};
+    let bodyContent = skillContent;
+    if (skillContent.startsWith("---")) {
+      const endIdx = skillContent.indexOf("---", 3);
+      if (endIdx > 0) {
+        const fmBlock = skillContent.substring(3, endIdx).trim();
+        bodyContent = skillContent.substring(endIdx + 3).trim();
+        // Simple YAML parser for frontmatter
+        for (const line of fmBlock.split("\n")) {
+          const colonIdx = line.indexOf(":");
+          if (colonIdx > 0) {
+            const key = line.substring(0, colonIdx).trim();
+            let value: unknown = line.substring(colonIdx + 1).trim();
+            // Parse arrays
+            if (typeof value === "string" && value.startsWith("[") && value.endsWith("]")) {
+              value = value.slice(1, -1).split(",").map(v => v.trim().replace(/['"]/g, ""));
+            }
+            frontmatter[key] = value;
+          }
+        }
+      }
+    }
+
+    // Extract tool references from the skill content
+    const toolRefs = new Set<string>();
+    const toolMatches = bodyContent.matchAll(/[`'](\w+)[`']/g);
+    for (const m of toolMatches) {
+      if (!toolRefs.has(m[1])) toolRefs.add(m[1]);
+    }
+
+    // Extract step sequence if present
+    const steps: string[] = [];
+    const stepMatches = bodyContent.matchAll(/^\d+\.\s+(.+)$/gm);
+    for (const m of stepMatches) {
+      steps.push(m[1].trim());
+    }
+
+    return {
+      skill_name,
+      loaded: true,
+      source,
+      path: foundPath,
+      frontmatter,
+      name: frontmatter.name || skill_name,
+      description: frontmatter.description || bodyContent.split("\n").find(l => l.trim() && !l.startsWith("#"))?.slice(0, 200) || "",
+      tools_referenced: [...toolRefs].slice(0, 30),
+      steps: steps.slice(0, 20),
+      content: bodyContent.slice(0, 15000),
+      content_truncated: bodyContent.length > 15000,
+      params_provided: params || null,
+      hint: steps.length > 0
+        ? `This skill has ${steps.length} defined steps. Follow them in order.`
+        : "Review the skill content and execute the prescribed operations.",
+    };
+  },
+});
+
+/**
+ * list_playbooks — List all available playbooks in organizations/.
+ *
+ * Gatekeeper tool for Pattern A. Scans the organizations/ directory
+ * and returns all playbook paths with their domains and titles.
+ * This is how the agent discovers what operational playbooks exist.
+ */
+export const listPlaybooks = tool({
+  description:
+    "List all available organizational playbooks. " +
+    "Returns each playbook's path, domain, title, and available routines. " +
+    "Use this to discover what operational procedures are documented before " +
+    "loading a specific playbook with view_file or execute_skill. " +
+    "Playbooks contain domain rules, safeguards, anti-patterns, and step-by-step routines.",
+  inputSchema: z.object({
+    org: z
+      .string()
+      .optional()
+      .default("newleaf-financial")
+      .describe("Organization to list playbooks for (default: newleaf-financial)"),
+    domain: z
+      .string()
+      .optional()
+      .describe("Filter to a specific domain (e.g., 'billing', 'disputes', 'customer-support')"),
+    search: z
+      .string()
+      .optional()
+      .describe("Search playbook titles and routines for a keyword"),
+  }),
+  execute: async ({ org, domain, search }) => {
+    try {
+      const { readdirSync, existsSync, statSync, readFileSync } = await import("fs");
+      const { join } = await import("path");
+
+      const orgsRoot = join(process.cwd(), "organizations");
+      if (!existsSync(orgsRoot)) {
+        return {
+          org,
+          total: 0,
+          playbooks: [],
+          message: "No organizations directory found. Playbooks are loaded from organizations/<org>/<domain>/playbook-<domain>.md",
+        };
+      }
+
+      const results: Array<{
+        org: string;
+        domain: string;
+        path: string;
+        title: string;
+        routineCount: number;
+        safeguardCount: number;
+      }> = [];
+
+      const orgs = readdirSync(orgsRoot).filter((d) =>
+        statSync(join(orgsRoot, d)).isDirectory()
+      );
+
+      for (const currentOrg of orgs) {
+        if (search && !currentOrg.toLowerCase().includes(search.toLowerCase())) {
+          // Still check inside
+        }
+
+        const orgPath = join(orgsRoot, currentOrg);
+        const domains = readdirSync(orgPath).filter((d) =>
+          statSync(join(orgPath, d)).isDirectory() && !d.startsWith(".")
+        );
+
+        for (const currentDomain of domains) {
+          const domainPath = join(orgPath, currentDomain);
+          const playbookNames = [`playbook-${currentDomain}.md`, "PLAYBOOK.md", "playbook.md"];
+
+          for (const pbName of playbookNames) {
+            const pbPath = join(domainPath, pbName);
+            if (existsSync(pbPath)) {
+              const raw = readFileSync(pbPath, "utf-8");
+              const titleLine = raw.split("\n").find(l => l.startsWith("# "))?.replace("# ", "") || currentDomain;
+              const routineCount = (raw.match(/###\s*Routine:/gi) || []).length;
+              const safeguardCount = (raw.match(/^-\s.+$/gm) || []).length;
+
+              const relativePath = `organizations/${currentOrg}/${currentDomain}/${pbName}`;
+
+              // Apply filters
+              if (org && currentOrg !== org) continue;
+              if (domain && currentDomain !== domain) continue;
+              if (search) {
+                const searchLower = search.toLowerCase();
+                if (!titleLine.toLowerCase().includes(searchLower) &&
+                    !currentDomain.toLowerCase().includes(searchLower) &&
+                    !raw.toLowerCase().includes(searchLower)) {
+                  continue;
+                }
+              }
+
+              results.push({
+                org: currentOrg,
+                domain: currentDomain,
+                path: relativePath,
+                title: titleLine,
+                routineCount,
+                safeguardCount,
+              });
+              break; // Only count first matching playbook per domain
+            }
+          }
+        }
+      }
+
+      // Also scan for VPS playbooks via bridge as fallback
+      const vpsPlaybooks: typeof results = [];
+      // We try the VPS bridge as well for jarvis/cortex/ playbooks
+      try {
+        const skillsList = await vpsFsList("jarvis/cortex/skills");
+        if (skillsList.success && skillsList.files) {
+          for (const f of skillsList.files) {
+            if (f.name.includes("playbook") || f.name.includes("connector")) {
+              vpsPlaybooks.push({
+                org: "vps-cortex",
+                domain: f.name.replace(".md", ""),
+                path: `jarvis/cortex/skills/${f.name}`,
+                title: f.name.replace(".md", ""),
+                routineCount: 0,
+                safeguardCount: 0,
+              });
+            }
+          }
+        }
+      } catch {
+        // VPS bridge optional
+      }
+
+      const allResults = [...results, ...vpsPlaybooks];
+
+      return {
+        org,
+        domain: domain || null,
+        total: allResults.length,
+        localRepo: results.length,
+        vpsCortex: vpsPlaybooks.length,
+        playbooks: allResults,
+        hint: "Use view_file with any path to read the full playbook. Playbooks contain domain rules, safeguards, and executable routines.",
+      };
+    } catch (err) {
+      return {
+        org,
+        total: 0,
+        playbooks: [],
+        error: `Failed to list playbooks: ${err instanceof Error ? err.message : "Unknown"}`,
+      };
+    }
+  },
+});
+
 // ── Tool Registry ────────────────────────────────────────────────────────
 
 /** All inline tools available to the agent, keyed by name. */
 export const inlineTools = {
-  // Knowledge
+  // ── Gatekeeper Tools (U2.1 Progressive Disclosure) ──
+  viewFile,
+  executeSkill,
+  listPlaybooks,
+  loadSkill,
+  selfCode,
+  // ── Legacy Knowledge Tools (kept for backward compat, prefer gatekeepers) ──
   readSkill,
   readPRD,
   listSkills,
   searchKnowledge,
-  loadSkill,
-  // Data
+  // ── Legacy Data Tools ──
   queryDatabase,
   pullSlackMessages,
   fetchURL,
-  // Workflow
+  // ── Legacy Workflow Tools ──
   runWorkflow,
   createWorkflow,
   updateWorkflow,
-  // V2 Bridge
+  // ── Legacy V2 Bridge Tools ──
   listV2Sessions,
   getV2Session,
   postV2Session,
   streamV2Progress,
   controlV2Session,
-  // Integration Discovery
+  // ── Legacy Integration Discovery ──
   listIntegrations,
-  // Self-Coding
-  selfCode,
 };
 
 /** Map of which tools require which env vars to function. */
 export const TOOL_REQUIREMENTS: Record<string, string[]> = {
+  // ── Gatekeeper Tools (U2.1 — Progressive Disclosure) ──
+  viewFile: ["VPS_FS_BRIDGE_URL"],
+  executeSkill: ["VPS_FS_BRIDGE_URL"],
+  listPlaybooks: [],
+  loadSkill: ["VPS_FS_BRIDGE_URL"],
+  selfCode: ["OPEN_AGENTS_API_KEY"],
+  // ── Legacy Knowledge Tools ──
   readSkill: ["VPS_FS_BRIDGE_URL"],
   readPRD: ["VPS_FS_BRIDGE_URL"],
   listSkills: ["VPS_FS_BRIDGE_URL"],
   searchKnowledge: ["VPS_FS_BRIDGE_URL"],
-  loadSkill: ["VPS_FS_BRIDGE_URL"],
+  // ── Legacy Data Tools ──
   queryDatabase: ["POSTGRES_URL"],
   pullSlackMessages: ["SLACK_BOT_TOKEN"],
   fetchURL: [],
+  // ── Legacy Workflow Tools ──
   runWorkflow: [],
   createWorkflow: [],
   updateWorkflow: [],
+  // ── Legacy V2 Bridge Tools ──
   listV2Sessions: [],
   getV2Session: [],
   postV2Session: [],
   streamV2Progress: [],
   controlV2Session: [],
+  // ── Legacy Integration Discovery ──
   listIntegrations: [],
-  selfCode: [],
 };
 
 /**
@@ -1010,6 +1409,7 @@ export function getAvailableToolNames(): string[] {
         case "VPS_FS_BRIDGE_URL": return !!secrets.vps.fsBridgeUrl;
         case "SLACK_BOT_TOKEN": return !!secrets.slack.botToken;
         case "POSTGRES_URL": return !!secrets.internal.postgresUrl;
+        case "OPEN_AGENTS_API_KEY": return !!secrets.neptuneV2.openAgentsApiKey;
         default: return Boolean(process.env[env]);
       }
     });
@@ -1034,6 +1434,7 @@ export function getAvailableTools(): Record<string, any> {
         case "VPS_FS_BRIDGE_URL": return !!secrets.vps.fsBridgeUrl;
         case "SLACK_BOT_TOKEN": return !!secrets.slack.botToken;
         case "POSTGRES_URL": return !!secrets.internal.postgresUrl;
+        case "OPEN_AGENTS_API_KEY": return !!secrets.neptuneV2.openAgentsApiKey;
         default: return Boolean(process.env[env]);
       }
     });
@@ -1042,4 +1443,37 @@ export function getAvailableTools(): Record<string, any> {
     }
   }
   return available;
+}
+
+/**
+ * U2.1.C — Gatekeeper-only tool set.
+ * Returns ONLY the 6 gatekeeper tools: viewFile, executeSkill, listPlaybooks,
+ * loadSkill, selfCode, spawnCodingAgent.
+ *
+ * All legacy tools (readSkill, queryDatabase, etc.) are excluded.
+ * The agent accesses those capabilities through load_skill → playbook → execute_skill.
+ */
+export const GATEKEEPER_TOOL_NAMES = [
+  "viewFile",
+  "executeSkill",
+  "listPlaybooks",
+  "loadSkill",
+  "selfCode",
+];
+
+/**
+ * Returns only the 6 gatekeeper tools (U2.1 progressive disclosure).
+ * The 6th tool (spawnCodingAgent) is provided by the sandbox toolset,
+ * not inline tools, so it's excluded here but available through sandboxTools.
+ */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export function getGatekeeperTools(): Record<string, any> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const gatekeeper: Record<string, any> = {};
+  for (const name of GATEKEEPER_TOOL_NAMES) {
+    if (inlineTools[name as keyof typeof inlineTools]) {
+      gatekeeper[name] = inlineTools[name as keyof typeof inlineTools];
+    }
+  }
+  return gatekeeper;
 }

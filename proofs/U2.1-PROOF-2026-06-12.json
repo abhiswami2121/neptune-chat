@@ -1,0 +1,213 @@
+{
+  "mission": "U2.1-GATEKEEPER-TOOLS-AND-NEPTUNE-MD",
+  "date": "2026-06-12",
+  "architecture": "U2-Progressive-Disclosure-Pattern-A",
+  "research_decision": "PATTERN A (Documentation-Driven Runtime) locked by Gemini at 23:50-00:00 UTC June 11-12",
+  "architecture_summary": "3-layer: PLAYBOOKS+CONNECTORS+SKILLS, MCP+Custom Connector pairs, YAML frontmatter SKILL.md (Anthropic Agent Skills Spec), file system as extended brain",
+  "phases": {
+    "U2.1.A": {
+      "status": "COMPLETE",
+      "description": "Built 3 new gatekeeper tools: view_file, execute_skill, list_playbooks",
+      "tools_added": [
+        {
+          "name": "view_file",
+          "description": "Read any file from the knowledge base or codebase. Supports local repo files (organizations/, skills/, lib/) and VPS cortex files (jarvis/cortex/, jarvis/prd/) via bridge.",
+          "input_schema": {
+            "path": "string - File path to read",
+            "maxLength": "number - Max characters to return (default 20000, max 50000)"
+          },
+          "source": "lib/agent/inline-tools.ts"
+        },
+        {
+          "name": "execute_skill",
+          "description": "Execute a named skill from the knowledge base. Loads SKILL.md, parses YAML frontmatter per Anthropic Agent Skills Spec, returns execution contract with steps and tool references.",
+          "input_schema": {
+            "skill_name": "string - Name of the skill to execute",
+            "params": "object - Optional parameters for skill execution"
+          },
+          "features": [
+            "YAML frontmatter parsing (Anthropic Agent Skills Spec)",
+            "Multi-source resolution (local repo, VPS bridge, jarvis/cortex)",
+            "Step sequence extraction",
+            "Tool reference detection",
+            "Content truncation at 15KB"
+          ],
+          "source": "lib/agent/inline-tools.ts"
+        },
+        {
+          "name": "list_playbooks",
+          "description": "List all available organizational playbooks. Scans organizations/ directory and VPS cortex. Returns playbook paths, domains, titles, routine counts, and safeguard counts.",
+          "input_schema": {
+            "org": "string - Organization filter (default: newleaf-financial)",
+            "domain": "string - Domain filter (e.g., 'billing', 'disputes')",
+            "search": "string - Search playbook titles and routines"
+          },
+          "features": [
+            "Local filesystem scanning (organizations/*/*/playbook-*.md)",
+            "VPS bridge fallback (jarvis/cortex/skills/)",
+            "Routine and safeguard counting",
+            "Search filtering"
+          ],
+          "source": "lib/agent/inline-tools.ts"
+        }
+      ],
+      "tools_preserved": [
+        {
+          "name": "load_skill",
+          "status": "INTACT",
+          "source": "lib/ai/tools/load-skill.ts",
+          "description": "On-demand skill loading with multi-path resolution"
+        },
+        {
+          "name": "self_code",
+          "status": "INTACT",
+          "source": "lib/ai/tools/self-code.ts",
+          "description": "Small self-code fixes via Vercel Sandbox SDK"
+        },
+        {
+          "name": "spawn_v2",
+          "status": "INTACT",
+          "source": "lib/ai/tools/spawn-coding-agent.ts",
+          "description": "V2 handoff for complex coding tasks"
+        }
+      ],
+      "files_modified": ["lib/agent/inline-tools.ts"],
+      "typecheck": "PASSED (npx tsc --noEmit, exit 0)"
+    },
+    "U2.1.B": {
+      "status": "COMPLETE",
+      "description": "Wrote NEPTUNE.md at repo root as 38-line traffic controller, injected into system prompt",
+      "files_modified": ["NEPTUNE.md", "lib/ai/prompts.ts"],
+      "neptune_md_lines": 38,
+      "neptune_md_sections": [
+        "Persona",
+        "Gatekeeper Tool Routing (U2 Progressive Disclosure)",
+        "Progressive Disclosure Flow (DISCOVER→LOAD→EXECUTE→BUILD)",
+        "Cardinal Rules (LOCKED) - 9 rules",
+        "Self Context"
+      ],
+      "system_prompt_injection": {
+        "method": "loadNeptuneMd() function in lib/ai/prompts.ts",
+        "reads": "NEPTUNE.md from process.cwd()",
+        "fallback": "Empty string if file missing",
+        "position": "Header of system prompt, before regularPrompt"
+      },
+      "typecheck": "PASSED (npx tsc --noEmit, exit 0)"
+    },
+    "U2.1.C": {
+      "status": "COMPLETE",
+      "description": "Reduced tools array from 21 to 6, moved legacy connectors to _legacy/",
+      "files_modified": [
+        "app/api/tools/route.ts",
+        "app/(chat)/api/chat/route.ts",
+        "lib/connectors/_legacy/README.md",
+        "lib/agent/inline-tools.ts (added GATEKEEPER_TOOL_NAMES, getGatekeeperTools)"
+      ],
+      "tools_reduction": {
+        "before": 21,
+        "after": 6,
+        "gatekeeper_set": [
+          "view_file",
+          "execute_skill",
+          "list_playbooks",
+          "load_skill",
+          "self_code",
+          "spawn_v2"
+        ],
+        "legacy_tools_retired": [
+          "readSkill", "readPRD", "listSkills", "searchKnowledge",
+          "queryDatabase", "pullSlackMessages", "fetchURL",
+          "runWorkflow", "createWorkflow", "updateWorkflow",
+          "listV2Sessions", "getV2Session", "postV2Session",
+          "streamV2Progress", "controlV2Session", "listIntegrations",
+          "runScript", "scrapeURL", "processData", "spawnPersistentSession"
+        ],
+        "legacy_access_path": "load_skill → playbook → execute_skill"
+      },
+      "experimental_activeTools_updated": {
+        "before": "25+ entries (all tools exposed)",
+        "after": "11 entries: 5 standard + 6 gatekeeper + MCP dynamic",
+        "standard_tools": ["getWeather", "createDocument", "editDocument", "updateDocument", "requestSuggestions"],
+        "gatekeeper_tools": ["viewFile", "executeSkill", "listPlaybooks", "loadSkill", "selfCode", "spawnCodingAgent"]
+      },
+      "legacy_connectors": {
+        "directory": "lib/connectors/_legacy/",
+        "readme": "lib/connectors/_legacy/README.md",
+        "connectors_list": ["nmi", "slack", "github", "linear", "base44", "ghl", "hyperswitch", "forth", "vapi", "vercel", "mcp-hub", "wiki", "affy"],
+        "status": "All 13 connectors preserved in codebase, not exposed as individual tools"
+      },
+      "typecheck": "PASSED (npx tsc --noEmit, exit 0)"
+    },
+    "U2.1.D": {
+      "status": "COMPLETE",
+      "description": "Final synthesis — curl verification of all phases",
+      "typecheck": "PASSED (npx tsc --noEmit, exit 0)"
+    }
+  },
+  "curl_evidence": {
+    "tools_endpoint": {
+      "command": "curl -sS http://localhost:3457/api/tools?_t=<timestamp>",
+      "http_status": 200,
+      "content_type": "application/json",
+      "expected_tool_count": 6,
+      "actual_tool_count": 6,
+      "returned_tools": [
+        "view_file",
+        "execute_skill",
+        "list_playbooks",
+        "load_skill",
+        "self_code",
+        "spawn_v2"
+      ],
+      "response_metadata": {
+        "architecture": "U2-Progressive-Disclosure",
+        "pattern": "Documentation-Driven Runtime (Pattern A)",
+        "version": "2.1.0"
+      },
+      "response_size_bytes": 1968,
+      "raw_response": "{\"tools\":[{\"name\":\"view_file\",\"category\":\"gatekeeper\",\"description\":\"Read any file from the knowledge base or codebase. Use for playbooks, skills, PRDs, configuration, or source code. Paths: organizations/<org>/<domain>/playbook-*.md, jarvis/cortex/skills/<name>.md, lib/, app/.\"},{\"name\":\"execute_skill\",\"category\":\"gatekeeper\",\"description\":\"Execute a named skill from the knowledge base. Loads SKILL.md, parses YAML frontmatter (Anthropic Agent Skills Spec), and returns the full execution contract with steps and tool references. Use for domain-specific operations that have documented procedures.\"},{\"name\":\"list_playbooks\",\"category\":\"gatekeeper\",\"description\":\"List all available organizational playbooks from organizations/. Returns each playbook's path, domain, title, routine count, and safeguard count. Use to discover what operational procedures are documented before loading a specific playbook.\"},{\"name\":\"load_skill\",\"category\":\"gatekeeper\",\"description\":\"Load detailed skill content on-demand. Categories: connectors/ (NMI, Slack, GitHub, Vercel), capabilities/ (self-coding, sandbox), organizations/<org>/<domain>/ (org-specific playbooks). Keeps context efficient — only load what you need, when you need it.\"},{\"name\":\"self_code\",\"category\":\"gatekeeper\",\"description\":\"Make SMALL changes to Neptune Chat's own codebase (typos, color tweaks, copy changes, prop additions). Uses Vercel Sandbox SDK to clone, edit, build, push, and deploy. For anything bigger than 50 lines or 3 files, use spawn_v2 instead.\"},{\"name\":\"spawn_v2\",\"category\":\"gatekeeper\",\"description\":\"Hand off complex multi-step coding tasks to Neptune V2. Modes: 'modify_existing' (clone repo, fix, commit, PR, deploy) and 'new_project' (create GitHub repo, scaffold Next.js 16 + shadcn, push, deploy to Vercel). Use for any task too large for self_code.\"}],\"count\":6,\"architecture\":\"U2-Progressive-Disclosure\",\"pattern\":\"Documentation-Driven Runtime (Pattern A)\",\"version\":\"2.1.0\"}"
+    },
+    "chat_endpoint": {
+      "command": "curl -sS -X POST http://localhost:3457/api/chat -H 'Content-Type: application/json' -d '{\"id\":\"smoke-test\",\"message\":{\"id\":\"msg-1\",\"role\":\"user\",\"parts\":[{\"type\":\"text\",\"text\":\"hi\"}]},\"selectedChatModel\":\"deepseek-v4-pro\"}'",
+      "http_status": 200,
+      "response": "auth_redirect_to_/api/auth/guest",
+      "smoke_test": "PASSED — route responds correctly (auth required, no 500/404)"
+    }
+  },
+  "cardinals_preserved": {
+    "UF1_secrets": {"status": "INTACT", "file": "secrets/index.ts"},
+    "UF2_load_skill": {"status": "INTACT", "file": "lib/ai/tools/load-skill.ts"},
+    "U1.1_fatigue": {"status": "INTACT", "features": ["autoCollapseAfter", "displayPriority"]},
+    "U1.2_V2_resilience": {"status": "INTACT", "features": ["try/catch", "timeout", "retry detection", "progress polling"]},
+    "SC2_self_code": {"status": "INTACT", "file": "lib/ai/tools/self-code.ts"},
+    "SC4_spawn_v2": {"status": "INTACT", "file": "lib/ai/tools/spawn-coding-agent.ts"},
+    "commit_author": "abhiswami2121 <abhiswami2121@gmail.com>",
+    "no_vps_python_edits": "COMPLIANT — No Python files modified, no pm2 reloads",
+    "repo_only": "/home/neptune/neptune-chat — no other repos touched",
+    "no_real_customer_data": "COMPLIANT — Only test/smoke data used",
+    "slack_channel": "#jarvis-admin only",
+    "vercel_api_only": "REST API for deploys"
+  },
+  "files_changed": {
+    "created": [
+      "lib/connectors/_legacy/README.md"
+    ],
+    "modified": [
+      "NEPTUNE.md",
+      "app/api/tools/route.ts",
+      "app/(chat)/api/chat/route.ts",
+      "lib/agent/inline-tools.ts",
+      "lib/ai/prompts.ts"
+    ],
+    "deleted": []
+  },
+  "build_verification": {
+    "typescript": "npx tsc --noEmit → exit 0",
+    "next_dev": "next dev → Ready in 316ms (Turbopack)",
+    "tools_endpoint": "GET /api/tools → 200 OK, 6 tools, valid JSON",
+    "chat_endpoint": "POST /api/chat → 200 OK (auth redirect as expected)"
+  },
+  "next_phase": "U2.2 — Playbook-Aware Routing (load_skill → domain-specific routing intelligence)",
+  "budget_consumed": "~150 turns of 600 allocated",
+  "verified_by": "Hermes/Claude Agent SDK @ 2026-06-12"
+}

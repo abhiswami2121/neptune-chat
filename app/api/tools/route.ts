@@ -1,99 +1,62 @@
 import { NextResponse } from "next/server";
 
+/**
+ * U2.1.C — Gatekeeper Tools Endpoint
+ * Reduced from 21 tools to 6 gatekeeper tools per Pattern A
+ * (Documentation-Driven Runtime architecture).
+ *
+ * The 6 tools form a progressive disclosure chain:
+ *   DISCOVER → LOAD → EXECUTE → BUILD
+ *
+ * All other capabilities (connectors, data, sandbox) are accessed
+ * through load_skill and execute_skill — the agent loads detailed
+ * playbooks on demand rather than having 400+ tools in the array.
+ */
 export async function GET() {
   const tools = [
     {
-      name: "readSkill",
-      category: "knowledge",
-      description: "Read a skill from cortex",
-    },
-    {
-      name: "readPRD",
-      category: "knowledge",
-      description: "Read a PRD document",
-    },
-    {
-      name: "listSkills",
-      category: "knowledge",
-      description: "List available skills",
-    },
-    {
-      name: "searchKnowledge",
-      category: "knowledge",
-      description: "Search knowledge graph",
-    },
-    {
-      name: "loadSkill",
-      category: "knowledge",
+      name: "view_file",
+      category: "gatekeeper",
       description:
-        "Load detailed skill content on-demand. Use for specific connector, playbook, or capability details. Categories: connectors/, capabilities/, organizations/<org>/<domain>/.",
+        "Read any file from the knowledge base or codebase. Use for playbooks, skills, PRDs, configuration, or source code. Paths: organizations/<org>/<domain>/playbook-*.md, jarvis/cortex/skills/<name>.md, lib/, app/.",
     },
     {
-      name: "queryDatabase",
-      category: "data",
-      description: "Query the database",
-    },
-    {
-      name: "pullSlackMessages",
-      category: "data",
-      description: "Pull Slack messages",
-    },
-    {
-      name: "fetchURL",
-      category: "data",
-      description: "Fetch content from URL",
-    },
-    {
-      name: "runScript",
-      category: "sandbox",
-      description: "Execute code in sandbox",
-    },
-    {
-      name: "scrapeURL",
-      category: "sandbox",
-      description: "Scrape a URL via sandbox",
-    },
-    {
-      name: "processData",
-      category: "sandbox",
-      description: "Process data in sandbox",
-    },
-    {
-      name: "runWorkflow",
-      category: "workflow",
-      description: "Run a multi-step workflow",
-    },
-    {
-      name: "spawnPersistentSession",
-      category: "sandbox",
-      description: "Spawn persistent sandbox session",
-    },
-    {
-      name: "spawnCodingAgent",
-      category: "v2-bridge",
-      description: "Hand off to V2 coding agent",
-    },
-    {
-      name: "listV2Sessions",
-      category: "v2-bridge",
-      description: "List V2 sessions",
-    },
-    {
-      name: "getV2Session",
-      category: "v2-bridge",
-      description: "Get V2 session details",
-    },
-    {
-      name: "streamV2Progress",
-      category: "v2-bridge",
-      description: "Stream V2 progress",
-    },
-    {
-      name: "selfCode",
-      category: "self-coding",
+      name: "execute_skill",
+      category: "gatekeeper",
       description:
-        "Make small fixes to Neptune Chat's own codebase (typos, color tweaks, copy changes). Hands off to V2 for larger work.",
+        "Execute a named skill from the knowledge base. Loads SKILL.md, parses YAML frontmatter (Anthropic Agent Skills Spec), and returns the full execution contract with steps and tool references. Use for domain-specific operations that have documented procedures.",
+    },
+    {
+      name: "list_playbooks",
+      category: "gatekeeper",
+      description:
+        "List all available organizational playbooks from organizations/. Returns each playbook's path, domain, title, routine count, and safeguard count. Use to discover what operational procedures are documented before loading a specific playbook.",
+    },
+    {
+      name: "load_skill",
+      category: "gatekeeper",
+      description:
+        "Load detailed skill content on-demand. Categories: connectors/ (NMI, Slack, GitHub, Vercel), capabilities/ (self-coding, sandbox), organizations/<org>/<domain>/ (org-specific playbooks). Keeps context efficient — only load what you need, when you need it.",
+    },
+    {
+      name: "self_code",
+      category: "gatekeeper",
+      description:
+        "Make SMALL changes to Neptune Chat's own codebase (typos, color tweaks, copy changes, prop additions). Uses Vercel Sandbox SDK to clone, edit, build, push, and deploy. For anything bigger than 50 lines or 3 files, use spawn_v2 instead.",
+    },
+    {
+      name: "spawn_v2",
+      category: "gatekeeper",
+      description:
+        "Hand off complex multi-step coding tasks to Neptune V2. Modes: 'modify_existing' (clone repo, fix, commit, PR, deploy) and 'new_project' (create GitHub repo, scaffold Next.js 16 + shadcn, push, deploy to Vercel). Use for any task too large for self_code.",
     },
   ];
-  return NextResponse.json({ tools, count: tools.length });
+
+  return NextResponse.json({
+    tools,
+    count: tools.length,
+    architecture: "U2-Progressive-Disclosure",
+    pattern: "Documentation-Driven Runtime (Pattern A)",
+    version: "2.1.0",
+  });
 }

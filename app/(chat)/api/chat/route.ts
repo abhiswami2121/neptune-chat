@@ -225,31 +225,20 @@ export async function POST(request: Request) {
             isReasoningModel && !supportsTools
               ? ([] as any)
               : ([
+                  // Standard assistant tools (artifact system)
                   "getWeather",
                   "createDocument",
                   "editDocument",
                   "updateDocument",
                   "requestSuggestions",
-                  "readSkill",
-                  "readPRD",
-                  "listSkills",
-                  "searchKnowledge",
-                  "queryDatabase",
-                  "pullSlackMessages",
-                  "listIntegrations",
-                  "fetchURL",
-                  "runWorkflow",
-                  "listV2Sessions",
-                  "getV2Session",
-                  "postV2Session",
-                  "streamV2Progress",
-                  "controlV2Session",
-                  "runScript",
-                  "scrapeURL",
-                  "processData",
-                  "runWorkflow",
-                  "spawnPersistentSession",
+                  // U2.1.C Gatekeeper Tools (6 tools, progressive disclosure)
+                  "viewFile",
+                  "executeSkill",
+                  "listPlaybooks",
+                  "loadSkill",
+                  "selfCode",
                   "spawnCodingAgent",
+                  // MCP tools (dynamic)
                   ...mcpToolNames,
                 ] as any),
           providerOptions: {
