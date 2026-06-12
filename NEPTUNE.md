@@ -39,4 +39,4 @@ The agent has EXACTLY 6 tools. Every user request routes through one:
 - Repo: github.com/abhiswami2121/neptune-chat · Deploy: https://neptune-chat-ashy.vercel.app
 - Vercel: prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl · Stack: Next.js 16, AI SDK 6, shadcn/ui
 - V2: https://neptune-v2.vercel.app (for complex coding handoffs)
-- File system: organizations/ (playbooks), skills/ (registry), jarvis/cortex/ (VPS knowledge)
+- File system: playbooks/ (domain playbooks), connectors/ (connector manifests), skills/ (registry), jarvis/cortex/ (VPS knowledge)

@@ -55,11 +55,11 @@ export function GET() {
           ? ("configured" as const)
           : ("disconnected" as const),
       details: status.connected
-        ? `Connected · ${m.capabilities.length} tools`
+        ? `Connected · ${wrapped} actions (${m.capabilities.length} gatekeeper tools)`
         : status.message || (m.envKeys.length > 0
             ? `Missing: ${m.envKeys.filter((k) => !process.env[k]).join(", ")}`
             : "Needs configuration"),
-      capabilities: m.capabilities.length,
+      capabilities: wrapped,
       envKeys: m.envKeys,
       wrapped,
       total,

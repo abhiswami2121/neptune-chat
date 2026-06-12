@@ -953,7 +953,7 @@ export const listIntegrations = tool({
  *
  * Gatekeeper tool for Pattern A (Documentation-Driven Runtime).
  * Provides direct file access. Reads from:
- *   - Local repo files (organizations/, skills/, lib/ etc.) via fs
+ *   - Local repo files (playbooks/, skills/, lib/ etc.) via fs
  *   - VPS cortex files (jarvis/cortex/, jarvis/prd/) via bridge
  *
  * This replaces the need for domain-specific read tools — the agent
@@ -963,7 +963,7 @@ export const viewFile = tool({
   description:
     "Read any file from the knowledge base or codebase. " +
     "Use for reading playbooks, skills, PRDs, configuration, or source code. " +
-    "Paths: organizations/<org>/<domain>/playbook-*.md for org playbooks, " +
+    "Paths: playbooks/<domain>/playbook-*.md for domain playbooks, " +
     "jarvis/cortex/skills/<name>.md for VPS skills, " +
     "jarvis/prd/<name>.md for PRD documents, " +
     "lib/ or app/ for source code.",
@@ -971,7 +971,7 @@ export const viewFile = tool({
     path: z
       .string()
       .describe(
-        "File path to read. Examples: 'organizations/newleaf-financial/billing/playbook-billing.md', " +
+        "File path to read. Examples: 'playbooks/billing/playbook-billing.md', " +
         "'jarvis/cortex/skills/neptune-v6-agent-patterns.md', " +
         "'skills/registry.json', 'NEPTUNE.md'. " +
         "Use list_playbooks to discover available playbook paths."
@@ -1046,7 +1046,7 @@ export const viewFile = tool({
  * Skill resolution order:
  *   1. skills/<category>/<name>/SKILL.md (local repo skills)
  *   2. jarvis/cortex/skills/<name>.md (VPS cortex)
- *   3. organizations/<org>/<domain>/playbook-*.md (org playbooks)
+ *   3. playbooks/<domain>/playbook-*.md (domain playbooks)
  */
 export const executeSkill = tool({
   description:
@@ -1182,15 +1182,15 @@ export const executeSkill = tool({
 });
 
 /**
- * list_playbooks — List all available playbooks in organizations/.
+ * list_playbooks — List all available playbooks in playbooks/.
  *
- * Gatekeeper tool for Pattern A. Scans the organizations/ directory
+ * Gatekeeper tool for Pattern A. Scans the playbooks/ directory
  * and returns all playbook paths with their domains and titles.
  * This is how the agent discovers what operational playbooks exist.
  */
 export const listPlaybooks = tool({
   description:
-    "List all available organizational playbooks. " +
+    "List all available domain playbooks from playbooks/. " +
     "Returns each playbook's path, domain, title, and available routines. " +
     "Use this to discover what operational procedures are documented before " +
     "loading a specific playbook with view_file or execute_skill. " +
@@ -1210,23 +1210,21 @@ export const listPlaybooks = tool({
       .optional()
       .describe("Search playbook titles and routines for a keyword"),
   }),
-  execute: async ({ org, domain, search }) => {
+  execute: async ({ org: _org, domain, search }) => {
     try {
       const { readdirSync, existsSync, statSync, readFileSync } = await import("fs");
       const { join } = await import("path");
 
-      const orgsRoot = join(process.cwd(), "organizations");
-      if (!existsSync(orgsRoot)) {
+      const playbooksRoot = join(process.cwd(), "playbooks");
+      if (!existsSync(playbooksRoot)) {
         return {
-          org,
           total: 0,
           playbooks: [],
-          message: "No organizations directory found. Playbooks are loaded from organizations/<org>/<domain>/playbook-<domain>.md",
+          message: "No playbooks/ directory found. Playbooks are loaded from playbooks/<domain>/playbook-<domain>.md",
         };
       }
 
       const results: Array<{
-        org: string;
         domain: string;
         path: string;
         title: string;
@@ -1234,70 +1232,91 @@ export const listPlaybooks = tool({
         safeguardCount: number;
       }> = [];
 
-      const orgs = readdirSync(orgsRoot).filter((d) =>
-        statSync(join(orgsRoot, d)).isDirectory()
+      const entries = readdirSync(playbooksRoot).filter((d) =>
+        statSync(join(playbooksRoot, d)).isDirectory() && !d.startsWith(".") && !d.startsWith("_")
       );
 
-      for (const currentOrg of orgs) {
-        if (search && !currentOrg.toLowerCase().includes(search.toLowerCase())) {
-          // Still check inside
-        }
+      for (const currentDomain of entries) {
+        // Apply domain filter early
+        if (domain && currentDomain !== domain) continue;
 
-        const orgPath = join(orgsRoot, currentOrg);
-        const domains = readdirSync(orgPath).filter((d) =>
-          statSync(join(orgPath, d)).isDirectory() && !d.startsWith(".")
-        );
+        const domainPath = join(playbooksRoot, currentDomain);
+        const playbookNames = [`playbook-${currentDomain}.md`, "PLAYBOOK.md", "playbook.md", "SKILL.md"];
 
-        for (const currentDomain of domains) {
-          const domainPath = join(orgPath, currentDomain);
-          const playbookNames = [`playbook-${currentDomain}.md`, "PLAYBOOK.md", "playbook.md"];
+        for (const pbName of playbookNames) {
+          const pbPath = join(domainPath, pbName);
+          if (existsSync(pbPath)) {
+            const raw = readFileSync(pbPath, "utf-8");
+            const titleLine = raw.split("\n").find(l => l.startsWith("# "))?.replace("# ", "") || currentDomain;
+            const routineCount = (raw.match(/###\s*Routine:/gi) || []).length;
+            const safeguardCount = (raw.match(/^-\s.+$/gm) || []).length;
 
-          for (const pbName of playbookNames) {
-            const pbPath = join(domainPath, pbName);
-            if (existsSync(pbPath)) {
-              const raw = readFileSync(pbPath, "utf-8");
-              const titleLine = raw.split("\n").find(l => l.startsWith("# "))?.replace("# ", "") || currentDomain;
-              const routineCount = (raw.match(/###\s*Routine:/gi) || []).length;
-              const safeguardCount = (raw.match(/^-\s.+$/gm) || []).length;
+            const relativePath = `playbooks/${currentDomain}/${pbName}`;
 
-              const relativePath = `organizations/${currentOrg}/${currentDomain}/${pbName}`;
-
-              // Apply filters
-              if (org && currentOrg !== org) continue;
-              if (domain && currentDomain !== domain) continue;
-              if (search) {
-                const searchLower = search.toLowerCase();
-                if (!titleLine.toLowerCase().includes(searchLower) &&
-                    !currentDomain.toLowerCase().includes(searchLower) &&
-                    !raw.toLowerCase().includes(searchLower)) {
-                  continue;
-                }
+            // Apply search filter
+            if (search) {
+              const searchLower = search.toLowerCase();
+              if (!titleLine.toLowerCase().includes(searchLower) &&
+                  !currentDomain.toLowerCase().includes(searchLower) &&
+                  !raw.toLowerCase().includes(searchLower)) {
+                continue;
               }
-
-              results.push({
-                org: currentOrg,
-                domain: currentDomain,
-                path: relativePath,
-                title: titleLine,
-                routineCount,
-                safeguardCount,
-              });
-              break; // Only count first matching playbook per domain
             }
+
+            results.push({
+              domain: currentDomain,
+              path: relativePath,
+              title: titleLine,
+              routineCount,
+              safeguardCount,
+            });
+            break; // Only count first matching playbook per domain
           }
         }
       }
 
+      // Also scan connectors/ directory for connector playbooks
+      const connectorsRoot = join(process.cwd(), "connectors");
+      const connectorPlaybooks: typeof results = [];
+      try {
+        if (existsSync(connectorsRoot)) {
+          const connDirs = readdirSync(connectorsRoot).filter((d) =>
+            statSync(join(connectorsRoot, d)).isDirectory() && !d.startsWith(".") && !d.startsWith("_")
+          );
+          for (const connDir of connDirs) {
+            const connPlaybookPaths = [
+              join(connectorsRoot, connDir, "PLAYBOOK.md"),
+              join(connectorsRoot, connDir, "SKILL.md"),
+            ];
+            for (const pp of connPlaybookPaths) {
+              if (existsSync(pp)) {
+                const raw = readFileSync(pp, "utf-8");
+                const titleLine = raw.split("\n").find(l => l.startsWith("# "))?.replace("# ", "") || connDir;
+                const routineCount = (raw.match(/###\s*Routine:/gi) || []).length;
+                connectorPlaybooks.push({
+                  domain: connDir,
+                  path: `connectors/${connDir}/${pp.split("/").pop()}`,
+                  title: `${titleLine} (connector)`,
+                  routineCount,
+                  safeguardCount: (raw.match(/^-\s.+$/gm) || []).length,
+                });
+                break;
+              }
+            }
+          }
+        }
+      } catch {
+        // connectors scan is optional
+      }
+
       // Also scan for VPS playbooks via bridge as fallback
       const vpsPlaybooks: typeof results = [];
-      // We try the VPS bridge as well for jarvis/cortex/ playbooks
       try {
         const skillsList = await vpsFsList("jarvis/cortex/skills");
         if (skillsList.success && skillsList.files) {
           for (const f of skillsList.files) {
             if (f.name.includes("playbook") || f.name.includes("connector")) {
               vpsPlaybooks.push({
-                org: "vps-cortex",
                 domain: f.name.replace(".md", ""),
                 path: `jarvis/cortex/skills/${f.name}`,
                 title: f.name.replace(".md", ""),
@@ -1311,20 +1330,19 @@ export const listPlaybooks = tool({
         // VPS bridge optional
       }
 
-      const allResults = [...results, ...vpsPlaybooks];
+      const allResults = [...results, ...connectorPlaybooks, ...vpsPlaybooks];
 
       return {
-        org,
         domain: domain || null,
         total: allResults.length,
-        localRepo: results.length,
+        localPlaybooks: results.length,
+        connectorPlaybooks: connectorPlaybooks.length,
         vpsCortex: vpsPlaybooks.length,
         playbooks: allResults,
         hint: "Use view_file with any path to read the full playbook. Playbooks contain domain rules, safeguards, and executable routines.",
       };
     } catch (err) {
       return {
-        org,
         total: 0,
         playbooks: [],
         error: `Failed to list playbooks: ${err instanceof Error ? err.message : "Unknown"}`,

@@ -18,7 +18,7 @@ export async function GET() {
       name: "view_file",
       category: "gatekeeper",
       description:
-        "Read any file from the knowledge base or codebase. Use for playbooks, skills, PRDs, configuration, or source code. Paths: organizations/<org>/<domain>/playbook-*.md, jarvis/cortex/skills/<name>.md, lib/, app/.",
+        "Read any file from the knowledge base or codebase. Use for playbooks, skills, PRDs, configuration, or source code. Paths: playbooks/<domain>/playbook-*.md, connectors/<name>/PLAYBOOK.md, jarvis/cortex/skills/<name>.md, lib/, app/.",
     },
     {
       name: "execute_skill",
@@ -30,13 +30,13 @@ export async function GET() {
       name: "list_playbooks",
       category: "gatekeeper",
       description:
-        "List all available organizational playbooks from organizations/. Returns each playbook's path, domain, title, routine count, and safeguard count. Use to discover what operational procedures are documented before loading a specific playbook.",
+        "List all available domain playbooks from playbooks/. Returns each playbook's path, domain, title, routine count, and safeguard count. Use to discover what operational procedures are documented before loading a specific playbook.",
     },
     {
       name: "load_skill",
       category: "gatekeeper",
       description:
-        "Load detailed skill content on-demand. Categories: connectors/ (NMI, Slack, GitHub, Vercel), capabilities/ (self-coding, sandbox), organizations/<org>/<domain>/ (org-specific playbooks). Keeps context efficient — only load what you need, when you need it.",
+        "Load detailed skill content on-demand. Categories: connectors/ (NMI, Slack, GitHub, Vercel), capabilities/ (self-coding, sandbox), playbooks/<domain>/ (domain-specific playbooks). Keeps context efficient — only load what you need, when you need it.",
     },
     {
       name: "self_code",

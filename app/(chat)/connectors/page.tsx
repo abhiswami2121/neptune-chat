@@ -12,13 +12,21 @@ import {
 } from "@/lib/connectors/inventory";
 import { ConnectorsClient } from "./client";
 
-/** U2.3: Per-connector comprehensive action counts */
+/** U2.3: Per-connector comprehensive action counts (wrapped via execute_skill) */
 const U23_ACTION_COUNTS: Record<string, number> = {
   base44: 63,
   slack: 27,
   nmi: 41,
   hyperswitch: 22,
   vapi: 16,
+  ghl: 5,
+  github: 6,
+  vercel: 5,
+  forth: 5,
+  affy: 4,
+  linear: 4,
+  wiki: 5,
+  "mcp-hub": 3,
 };
 
 export default async function ConnectorsPage() {

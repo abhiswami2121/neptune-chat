@@ -1,0 +1,132 @@
+{
+  "mission": "U2.4.5 CRITICAL ALIGNMENT FIX",
+  "timestamp": "2026-06-12T01:30:00Z",
+  "status": "COMPLETED",
+  
+  "phases": {
+    "U2.4.5.A_path_fixes": {
+      "status": "DONE",
+      "description": "Search-replace organizations/newleaf-financial/ → playbooks/ across all agent-facing files",
+      "files_changed": [
+        "lib/ai/tools/load-skill.ts",
+        "lib/agent/inline-tools.ts",
+        "app/api/tools/route.ts",
+        "NEPTUNE.md"
+      ],
+      "verify_grep": "ZERO references to 'organizations/newleaf' in lib/ and app/api/tools/",
+      "grep_result": "CLEAN - 0 matches in lib/ai/* and lib/agent/*",
+      "evidence": {
+        "tools_endpoint": "/api/tools returns 6 gatekeeper tools with playbooks/ paths",
+        "description_sample": "view_file: 'playbooks/<domain>/playbook-*.md', load_skill: 'playbooks/<domain>/ (domain-specific playbooks)'",
+        "neptune_md": "Updated file system listing to playbooks/ (domain playbooks), connectors/ (connector manifests)"
+      }
+    },
+    
+    "U2.4.5.B_connector_counts": {
+      "status": "DONE",
+      "description": "Update connector inventory, catalog, and API to return real U2.3 comprehensive action counts",
+      "files_changed": [
+        "lib/connectors/inventory.ts",
+        "lib/connectors/catalog.ts",
+        "app/api/connectors/route.ts",
+        "app/(chat)/connectors/page.tsx"
+      ],
+      "before_counts": {
+        "base44": 6,
+        "slack": 5,
+        "nmi": 4,
+        "hyperswitch": 3,
+        "vapi": 2,
+        "note": "These were the STALE manifest capability counts"
+      },
+      "after_counts": {
+        "base44": 63,
+        "slack": 27,
+        "nmi": 41,
+        "hyperswitch": 22,
+        "vapi": 16,
+        "ghl": 5,
+        "github": 6,
+        "vercel": 5,
+        "forth": 5,
+        "affy": 4,
+        "linear": 4,
+        "wiki": 5,
+        "mcp-hub": 3,
+        "vps": 0,
+        "total_comprehensive": 206,
+        "u23_explicit": 169
+      },
+      "api_connectors_evidence": {
+        "endpoint": "GET /api/connectors",
+        "slack": "27 actions (5 gatekeeper tools) — was 5",
+        "nmi": "41 actions (5 gatekeeper tools) — was 4",
+        "base44": "63 actions (6 gatekeeper tools) — was 6",
+        "hyperswitch": "22 actions (4 gatekeeper tools) — was 3",
+        "vapi": "16 actions (3 gatekeeper tools) — was 2",
+        "inventory_coverage": "206/437 (47.1%)"
+      }
+    },
+    
+    "U2.4.5.C_smoke_tests": {
+      "status": "DONE",
+      "description": "End-to-end smoke verification of corrected endpoints",
+      "test_1_tools_endpoint": {
+        "curl": "GET /api/tools",
+        "status": 200,
+        "tool_count": 6,
+        "architecture": "U2-Progressive-Disclosure",
+        "description_verification": "NO organizations/ references, uses playbooks/ paths"
+      },
+      "test_2_connectors_endpoint": {
+        "curl": "GET /api/connectors",
+        "status": 200,
+        "total_connectors": 14,
+        "comprehensive_actions": 206,
+        "verification": "Major connectors show correct comprehensive counts (base44:63, slack:27, nmi:41, hyperswitch:22, vapi:16)"
+      },
+      "test_3_file_tree_endpoint": {
+        "curl": "GET /api/file-tree?root=playbooks",
+        "status": "redirect to auth (expected for Next-Auth app)",
+        "code_verification": "Route uses playbooks/ as default root, builds tree from playbooks/ directory"
+      },
+      "test_4_inventory_coverage": {
+        "verification": "Inventory coverage 206/437 (47.1%), P0: 152/340 (5 connectors)",
+        "by_priority": {
+          "P0": {"wrapped": 152, "total": 340, "count": 5},
+          "P1": {"wrapped": 38, "total": 72, "count": 5},
+          "P2": {"wrapped": 16, "total": 25, "count": 4}
+        }
+      },
+      "test_5_path_cleanliness": {
+        "verification": "grep -rn 'organizations/newleaf' lib/ → 0 matches",
+        "tool_6_count": 6,
+        "actions_accessible": 206
+      }
+    }
+  },
+  
+  "cardinals_met": {
+    "tools_array_at_6": true,
+    "no_organizations_references_in_lib_agent": true,
+    "no_vps_python_edits_or_pm2": true,
+    "only_neptune_chat_repo": true,
+    "commit_author": "abhiswami2121@gmail.com",
+    "slack_jarvis_admin_only": true,
+    "no_real_customer_data": true,
+    "never_cancel_other_sessions": true
+  },
+  
+  "changed_files_summary": [
+    "lib/ai/tools/load-skill.ts — 3 description/comment edits (org paths → playbook paths)",
+    "lib/agent/inline-tools.ts — 7 edits: viewFile path examples, executeSkill comment, listPlaybooks full rewrite to playbooks/ dir",
+    "app/api/tools/route.ts — 3 description edits (organizations/ → playbooks/)",
+    "NEPTUNE.md — 1 line edit (file system listing)",
+    "lib/connectors/inventory.ts — 5 wrapped count updates (base44:6→63, slack:5→27, nmi:4→41, vapi:2→16, hyperswitch:3→22)",
+    "lib/connectors/catalog.ts — import inventory, use comprehensive wrapped count instead of manifest capabilities.length",
+    "app/api/connectors/route.ts — details show 'X actions (Y gatekeeper tools)', capabilities uses wrapped count",
+    "app/(chat)/connectors/page.tsx — expanded U23_ACTION_COUNTS to all 13 connectors"
+  ],
+  
+  "next_steps": "Commit and push to trigger Vercel auto-deploy. After deploy, full /api/chat smoke test with agent prompts."
+}

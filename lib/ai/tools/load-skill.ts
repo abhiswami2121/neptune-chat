@@ -10,7 +10,7 @@
  * Supported paths:
  *   connectors/<name>     → reads connector playbook and tool docs
  *   capabilities/<name>   → reads capability playbook
- *   organizations/<org>/<domain> → reads org-specific playbook
+ *   playbooks/<domain>         → reads domain-specific playbook
  *   skills/<name>         → reads general skill file
  */
 import { tool } from "ai";
@@ -160,7 +160,7 @@ function extractToolsAvailable(content: string): string[] {
  * Path conventions:
  *   connectors/<name>        → jarvis/cortex/skills/<name>-connector*.md + connectors/<name>/SKILL.md
  *   capabilities/<name>      → jarvis/cortex/skills/<name>*.md
- *   organizations/<org>/<d>  → jarvis/cortex/organizations/<org>/<domain>/*.md
+ *   playbooks/<domain>        → playbooks/<domain>/playbook-<domain>.md
  *   skills/<name>            → jarvis/cortex/skills/<name>.md
  *   <bare name>              → tries jarvis/cortex/skills/<name>.md
  */
@@ -253,7 +253,7 @@ export const loadSkill = tool({
       .string()
       .describe(
         "Skill path to load. Examples: 'connectors/slack', 'capabilities/self-coding', " +
-        "'skills/billing-flow-retry', 'connectors/nmi', 'organizations/newleaf-financial/customer-support'. " +
+        "'skills/billing-flow-retry', 'connectors/nmi', 'playbooks/customer-support'. " +
         "Bare names like 'slack' are resolved to the best matching skill file."
       ),
   }),

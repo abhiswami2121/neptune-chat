@@ -8,6 +8,7 @@
  */
 import { initConnectors } from "./init";
 import { listConnectors } from "./registry";
+import { getInventoryEntry } from "./inventory";
 import type { ConnectorEntry } from "./types";
 
 export interface IntegrationSummary {
@@ -40,6 +41,9 @@ export function getIntegrationSummaries(): IntegrationSummary[] {
     const m = entry.manifest;
     const toolNames = m.capabilities.map((c) => c.id);
     const status = entry.status;
+    // U2.4.5: Use comprehensive wrapped count from inventory, fall back to manifest capabilities
+    const inventory = getInventoryEntry(m.id);
+    const comprehensiveTools = inventory?.wrapped ?? m.capabilities.length;
 
     return {
       id: m.id,
@@ -50,13 +54,13 @@ export function getIntegrationSummaries(): IntegrationSummary[] {
         : m.envKeys.some((k) => process.env[k])
           ? ("configured" as const)
           : ("disconnected" as const),
-      tools: m.capabilities.length,
+      tools: comprehensiveTools,
       toolNames,
       playbook: m.playbookPath,
       brandColor: m.brandColor,
       envKeys: m.envKeys,
       details: status.connected
-        ? `Connected · ${m.capabilities.length} tools`
+        ? `Connected · ${comprehensiveTools} actions`
         : status.message ||
           (m.envKeys.length > 0
             ? `Missing: ${m.envKeys.filter((k) => !process.env[k]).join(", ")}`
