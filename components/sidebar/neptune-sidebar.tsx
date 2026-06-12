@@ -3,6 +3,7 @@
 import {
   BarChart3,
   BookOpen,
+  Bot,
   Brain,
   ChevronLeft,
   ChevronRight,
@@ -35,6 +36,7 @@ const TABS = [
   { id: "knowledge", label: "Knowledge", icon: BookOpen, href: "/knowledge" },
   { id: "workflows", label: "Workflows", icon: Zap, href: "/workflows" },
   { id: "reports", label: "Reports", icon: BarChart3, href: "/reports" },
+  { id: "v2-sessions", label: "V2 Sessions", icon: Bot, href: "/v2-sessions" },
 ] as const;
 
 export function NeptuneSidebar() {
