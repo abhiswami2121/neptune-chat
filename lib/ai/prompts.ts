@@ -47,12 +47,12 @@ CRITICAL RULES:
 - ONLY when the user explicitly asks for suggestions on an existing document
 `;
 
-// ── NEPTUNE.md Traffic Controller (U2.1.B) ────────────────────────────────
+// ── NEPTUNE.md Traffic Controller + PLAYBOOK-ROUTER.md (PB-A Playbook-First) ──
 
 /**
  * Read NEPTUNE.md from repo root at runtime.
- * This is the primary agent system prompt — a 38-line traffic controller
- * that defines the 6 gatekeeper tools and progressive disclosure flow.
+ * This is the primary agent system prompt — a 40-line traffic controller
+ * that defines the router-first protocol and 6 gatekeeper tools.
  */
 function loadNeptuneMd(): string {
   try {
@@ -66,10 +66,33 @@ function loadNeptuneMd(): string {
   return "";
 }
 
+/**
+ * Read PLAYBOOK-ROUTER.md from playbooks/ at runtime.
+ * PB-A: This is THE intent router — agent reads it FIRST every turn.
+ * 82 intent→playbook routes across 11 domains + 13 connectors.
+ */
+function loadPlaybookRouter(): string {
+  try {
+    const routerPath = join(process.cwd(), "playbooks", "PLAYBOOK-ROUTER.md");
+    if (existsSync(routerPath)) {
+      return readFileSync(routerPath, "utf-8");
+    }
+    // Fallback: try Jarvis FS path
+    const jarvisRouterPath = join(process.cwd(), "..", "playbooks", "PLAYBOOK-ROUTER.md");
+    if (existsSync(jarvisRouterPath)) {
+      return readFileSync(jarvisRouterPath, "utf-8");
+    }
+  } catch {
+    // Gracefully degrade
+  }
+  return "";
+}
+
 export const regularPrompt = `You are a helpful assistant. Keep responses concise and direct.
 When asked to write, create, or build something, do it immediately. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.`;
 
 export const neptuneTrafficController = loadNeptuneMd();
+export const playbookRouter = loadPlaybookRouter();
 
 export type RequestHints = {
   latitude: Geo["latitude"];
@@ -122,13 +145,20 @@ export const systemPrompt = ({
   // Dynamic connector catalog — tells the agent what integrations are available
   const connectorCatalog = buildConnectorCatalogPrompt();
 
-  // U2.1.B: NEPTUNE.md is the primary system prompt header.
-  // It defines the 6 gatekeeper tools, progressive disclosure flow, and cardinal rules.
+  // PB-A: NEPTUNE.md is the primary system prompt header (router-first protocol).
+  // PLAYBOOK-ROUTER.md is the second-most-important context — 82 intent→playbook routes.
   const neptuneHeader = neptunePrompt
     ? `${neptunePrompt}\n\n---\n\n`
     : "";
 
-  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
+  // PB-A: Inject PLAYBOOK-ROUTER.md as immediate operational context.
+  // This gives the agent the full intent→playbook map without needing to read a file.
+  const routerContent = loadPlaybookRouter();
+  const routerSection = routerContent
+    ? `\n\n## 🧭 PLAYBOOK-ROUTER (Intent Map — Read FIRST)\n\n${routerContent}\n\n---\n*Above is the playbook router. Match the user's intent to ONE playbook before using any tools.*\n`
+    : "";
+
+  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${routerSection}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
 };
 
 export const codePrompt = `

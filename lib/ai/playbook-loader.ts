@@ -119,6 +119,111 @@ const ENROLLMENT_FALLBACK = `
 - Payment method must pass $1 auth before considering enrollment complete.
 `;
 
+const AGENT_ORCHESTRATION_FALLBACK = `
+## Agent Orchestration Domain — Operational Knowledge
+
+### Core Rules
+1. Route tasks to the right agent based on domain expertise.
+2. Multi-agent coordination: dispatch parallel tasks when possible.
+3. Self-heal: if an agent fails, retry with backoff or reassign.
+
+### Safeguards
+- Never dispatch without verifying agent availability.
+- Track all dispatched tasks for completion audit.
+`;
+
+const DEPLOY_FALLBACK = `
+## Deploy (Vercel + GitHub) Domain — Operational Knowledge
+
+### Core Rules
+1. Every deploy goes through Vercel REST API or GitHub PR.
+2. Pre-commit validation: lint + type-check before push.
+3. Smoke test after every deploy.
+4. NEVER push directly to main on protected repos.
+
+### Safeguards
+- CI must pass per commit.
+- Rollback if production breaks.
+`;
+
+const ENGINEERING_FALLBACK = `
+## Engineering Domain — Operational Knowledge
+
+### Core Rules
+1. Code review: check for patterns, anti-patterns, security, performance.
+2. Architecture decisions: use ADR process with trade-off analysis.
+3. PRDs: follow standard template with success criteria.
+
+### Safeguards
+- Never merge without review on critical paths.
+- Always update playbooks after significant changes.
+`;
+
+const REPORTING_FALLBACK = `
+## Reporting Domain — Operational Knowledge
+
+### Core Rules
+1. Use reportingHub for pre-aggregated operational data.
+2. Morning pulse: daily overview of critical metrics.
+3. Warehouse queries: read-only, always add LIMIT.
+
+### Safeguards
+- Never query without filters on large entities.
+- Report critical findings to Slack #jarvis-admin.
+`;
+
+const VPS_OPS_FALLBACK = `
+## VPS Operations Domain — Operational Knowledge
+
+### Core Rules
+1. NEVER edit VPS Python scripts or pm2 reload (cardinal 6a153d63).
+2. Use native Bash/Read/Write/Edit tools for VPS work.
+3. Monitor CPU/memory before running heavy operations.
+
+### Safeguards
+- Never restart pm2 without explicit user approval.
+- Check Cloudflare status before assuming server is down.
+`;
+
+const VERCEL_DISCIPLINE_FALLBACK = `
+## Vercel Discipline Domain — Operational Knowledge
+
+### Core Rules
+1. Vercel REST API only — never Vercel CLI on VPS.
+2. env vars: managed via Vercel dashboard or API.
+3. Domain management: verify DNS before switching.
+
+### Safeguards
+- Never delete production deployments.
+- Always verify build succeeded before considering deploy complete.
+`;
+
+const MARKETING_FALLBACK = `
+## Marketing Domain — Operational Knowledge
+
+### Core Rules
+1. DNC compliance: check DncList before every outbound contact.
+2. SMS opt-out required: every message must include STOP instructions.
+3. Campaign tracking: attribute leads to source for ROI measurement.
+
+### Safeguards
+- Never contact numbers on DncList.
+- 10DLC compliance required for all SMS campaigns.
+`;
+
+const HR_FALLBACK = `
+## HR Domain — Operational Knowledge
+
+### Core Rules
+1. Agent availability tracking: monitor staffing levels.
+2. Onboarding: follow compliance training checklist.
+3. PCI training: mandatory for all agents handling payment data.
+
+### Safeguards
+- Never share personnel information in public channels.
+- Track training completion for audit compliance.
+`;
+
 // ── File System Playbook Loader ─────────────────────────────────────────────
 
 const PLAYBOOKS_ROOT = join(process.cwd(), "playbooks");
@@ -476,24 +581,76 @@ interface TriggerEntry {
 }
 
 const TRIGGER_ENTRIES: TriggerEntry[] = [
+  // ── P0: Billing & Payments ──
   {
     domain: "billing",
-    triggers: ["refund", "charge", "bill", "payment", "transaction", "nmi", "vault", "decline", "subscription", "recurring", "invoice", "fee", "amount", "$", "dollar", "credit card", "card"],
+    triggers: ["refund", "charge", "bill", "payment", "transaction", "nmi", "vault", "decline", "subscription", "recurring", "invoice", "fee", "amount", "credit card", "card", "hyperswitch", "newleaf-pay", "merchant", "cvv", "225", "broken chain", "orphan sub", "billing link", "collect.js", "pay now", "update card", "reschedule", "payment date"],
     fallbackContent: BILLING_FALLBACK,
   },
-  {
-    domain: "disputes",
-    triggers: ["dispute", "credit report", "fcra", "bureau", "equifax", "experian", "transunion", "deletion", "investigation", "round 2", "dispute round"],
-    fallbackContent: DISPUTES_FALLBACK,
-  },
+  // ── P0: Customer Support ──
   {
     domain: "customer-support",
-    triggers: ["ticket", "support", "help", "issue", "problem", "complaint", "cfpb", "legal", "look up", "who is", "customer", "check on", "pull up", "status", "find"],
+    triggers: ["ticket", "support", "help", "issue", "problem", "complaint", "cfpb", "legal", "look up", "who is", "customer", "check on", "pull up", "status", "find", "customer 360", "triage", "classify", "route", "assign", "sla", "resolve", "chargeback", "unauthorized", "frustrated"],
     fallbackContent: SUPPORT_FALLBACK,
   },
+  // ── P0: Disputes & FCRA ──
+  {
+    domain: "disputes",
+    triggers: ["dispute", "credit report", "fcra", "bureau", "equifax", "experian", "transunion", "deletion", "investigation", "round 2", "dispute round", "bureau letter", "forth", "deletion", "negative item"],
+    fallbackContent: DISPUTES_FALLBACK,
+  },
+  // ── P1: Deploy & Ship ──
+  {
+    domain: "deploy-vercel-github",
+    triggers: ["ship", "deploy", "land", "merge", "release", "push to prod", "pr", "pull request", "open pr", "create pr", "stale", "not updating", "old version", "cache", "rollback", "revert", "undo deploy"],
+    fallbackContent: DEPLOY_FALLBACK,
+  },
+  // ── P1: Engineering & Code ──
+  {
+    domain: "engineering",
+    triggers: ["review", "code review", "audit code", "architecture", "design", "pattern", "write prd", "spec out", "plan feature", "refactor", "clean up", "improve", "restructure", "debug", "bug", "error", "not working", "broken", "crash", "build", "create", "implement", "new feature", "edit file", "fix code", "modify"],
+    fallbackContent: ENGINEERING_FALLBACK,
+  },
+  // ── P1: Agent Orchestration ──
+  {
+    domain: "agent-orchestration",
+    triggers: ["dispatch", "send to agent", "assign", "handoff", "delegate", "multi agent", "parallel", "team", "swarm", "collaborate", "agent failed", "retry", "stuck", "agent status", "spawn", "v2 sandbox", "sandbox", "coding agent"],
+    fallbackContent: AGENT_ORCHESTRATION_FALLBACK,
+  },
+  // ── P1: Reporting ──
+  {
+    domain: "reporting",
+    triggers: ["morning pulse", "daily report", "today summary", "overview", "how many customers", "mrr", "revenue", "churn", "growth", "billing chain", "recon", "broken chains", "agent metrics", "commissions", "performance", "sales", "sync health", "data freshness", "warehouse", "ingestion", "enrollment stats", "funnel", "conversion", "pipeline", "report", "analytics", "query", "stats", "dashboard", "metrics"],
+    fallbackContent: REPORTING_FALLBACK,
+  },
+  // ── P1: VPS Ops ──
+  {
+    domain: "vps-ops",
+    triggers: ["vps health", "server status", "system check", "cpu", "memory", "vps down", "server crashed", "outage", "offline", "not responding", "vps deploy", "update server", "restart service", "pm2", "logs", "error log", "access log", "nginx", "ssl", "cert", "https", "certificate", "tls", "expired"],
+    fallbackContent: VPS_OPS_FALLBACK,
+  },
+  // ── P1: Vercel Discipline ──
+  {
+    domain: "vercel-discipline",
+    triggers: ["vercel deploy", "push live", "ship to cloud", "is it live", "deploy status", "build status", "vercel check", "env vars", "vercel config", "domain", "security headers", "vercel security"],
+    fallbackContent: VERCEL_DISCIPLINE_FALLBACK,
+  },
+  // ── P2: Marketing ──
+  {
+    domain: "marketing",
+    triggers: ["campaign", "dialer", "outbound", "call campaign", "auto dialer", "nurture", "sequence", "follow up", "drip", "sms sequence", "blast", "mass sms", "bulk email", "broadcast", "dnc", "do not call", "opt out", "unsubscribe", "campaign roi", "conversion rate", "lead source", "attribution", "enrollment flow", "signup", "onboarding sequence"],
+    fallbackContent: MARKETING_FALLBACK,
+  },
+  // ── P2: HR ──
+  {
+    domain: "HR",
+    triggers: ["team", "who is working", "agent availability", "staffing", "onboard", "new hire", "new agent", "welcome", "setup account", "training", "pci training", "compliance", "certification"],
+    fallbackContent: HR_FALLBACK,
+  },
+  // ── P0: Customer Enrollment (playbook-os) ──
   {
     domain: "customer-enrollment",
-    triggers: ["enroll", "sign up", "new customer", "onboarding", "welcome", "agreement", "docusign", "credit pull", "identity"],
+    triggers: ["enroll", "sign up", "new customer", "onboarding", "welcome", "agreement", "docusign", "credit pull", "identity", "verify identity"],
     fallbackContent: ENROLLMENT_FALLBACK,
   },
 ];
