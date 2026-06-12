@@ -1,0 +1,49 @@
+{
+  "$schema": "https://raw.githubusercontent.com/modelcontextprotocol/servers/main/src/slack/schema.json",
+  "name": "slack-mcp-server",
+  "version": "1.0.0",
+  "description": "Official Slack MCP server for standard Slack operations. Covers base messaging, channels, and users. Custom client.ts adds bulk operations, scheduled messages, and advanced search.",
+  "vendor": "modelcontextprotocol/servers",
+  "repository": "https://github.com/modelcontextprotocol/servers/tree/main/src/slack",
+  "transport": {
+    "type": "stdio",
+    "command": "npx",
+    "args": ["-y", "@modelcontextprotocol/server-slack"]
+  },
+  "env": {
+    "SLACK_BOT_TOKEN": "${SLACK_BOT_TOKEN}",
+    "SLACK_TEAM_ID": "${SLACK_TEAM_ID}"
+  },
+  "capabilities": {
+    "native": [
+      "channels.list",
+      "channels.history",
+      "channels.info",
+      "chat.postMessage",
+      "chat.update",
+      "chat.delete",
+      "users.list",
+      "users.info",
+      "users.lookupByEmail",
+      "reactions.add",
+      "reactions.remove",
+      "reactions.get",
+      "search.messages",
+      "conversations.members",
+      "conversations.invite",
+      "conversations.kick"
+    ],
+    "custom_only": [
+      "send_dm",
+      "schedule_message",
+      "upload_file",
+      "set_topic",
+      "set_purpose",
+      "get_team_info",
+      "get_user_presence",
+      "bulk_send",
+      "bulk_react"
+    ]
+  },
+  "notes": "The Slack MCP server provides token-efficient native MCP tool access for standard Slack read/write. Our custom client.ts in connectors/slack/ adds specialized operations (bulk sends, scheduled messages, DMs, file uploads) that go beyond MCP coverage."
+}
