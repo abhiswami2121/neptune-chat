@@ -3,7 +3,7 @@
 Auto-generated master index of all skills, connectors, and capabilities.  
 Source of truth for the Progressive Disclosure skill loading system (U2).
 
-*Regenerated: 2026-06-12T06:01:07.793Z by skill-author/regenerate-skill-index*
+*Regenerated: 2026-06-12T06:02:00.850Z by skill-author/regenerate-skill-index*
 
 ## 📚 Playbooks (10 domains)
 
@@ -20,12 +20,13 @@ Source of truth for the Progressive Disclosure skill loading system (U2).
 | Vercel Discipline | playbooks/vercel-discipline/ | playbook-vercel-discipline.md |
 | VPS Ops | playbooks/vps-ops/ | playbook-vps-ops.md |
 
-## 🔌 Connectors (14 integration packs)
+## 🔌 Connectors (15 integration packs)
 
 | Connector | Path | Domain | MCP | Description |
 |-----------|------|--------|-----|-------------|
 | Affy | connectors/affy/ | billing-flow | - | Chargeback disputes — affidavits, evidence, and defense automation |
 | Base44 | connectors/base44/ | customer-enrollment | - | Entity queries, customer 360, reporting hub, and function invocation |
+| Cat-facts | connectors/cat-facts/ | engineering | - | Cat Facts API — random feline trivia from catfact.ninja |
 | Custom-skills | connectors/custom-skills/ | agent-orchestration | - | Pure non-API capabilities — playbook refinement, code review, self-coding, research, and response formatting. No external API, operates on local filesystem and knowledge graph. |
 | Forth | connectors/forth/ | credit-disputes | - | Debt Protection Program — dispute management and credit repair |
 | Ghl | connectors/ghl/ | customer-comms | - | CRM — contacts, SMS, email, conversations, and pipeline |
@@ -96,10 +97,10 @@ skills/functions/billing-event-logger
 ## Totals
 
 - **10** playbook domains
-- **14** connector integration packs
+- **15** connector integration packs
 - **7** capabilities
 - **10** functions
 - **13** connector skill docs
-- **54** total loadable skill paths
+- **55** total loadable skill paths
 
-*Regenerated 2026-06-12T06:01:07.794Z*
+*Regenerated 2026-06-12T06:02:00.850Z*

@@ -19,6 +19,7 @@ associated_connectors:
   - vercel
   - wiki
   - mcp-hub
+  - cat-facts
 associated_skills:
   - capabilities/code-review
   - capabilities/research
@@ -68,6 +69,14 @@ routines_count: 3
 6. Component creation: use shadcn/ui primitives, follow existing patterns in components/ui/
 7. API routes: use Next.js App Router route handlers in app/api/
 8. New connectors: follow _template pattern in connectors/ folder
+
+
+## Connector: cat-facts
+
+- **Path:** connectors/cat-facts
+- **Status:** active
+- **Domain:** engineering
+- **Added:** 2026-06-12T06:01:58.752Z
 
 ## Routines
 

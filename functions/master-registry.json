@@ -1,14 +1,15 @@
 {
   "version": "1.0.0",
-  "generated": "2026-06-12T06:01:09.053Z",
-  "total_functions": 248,
+  "generated": "2026-06-12T06:01:59.802Z",
+  "total_functions": 251,
   "connectors": [
     "base44",
     "nmi",
     "slack",
     "hyperswitch",
     "vapi",
-    "custom-skills"
+    "custom-skills",
+    "cat-facts"
   ],
   "functions": [
     {
@@ -5432,6 +5433,57 @@
         "meta"
       ],
       "category": "meta"
+    },
+    {
+      "function_name": "list_breeds",
+      "execution_signature": "execute_skill(\"connectors/cat-facts\", \"list_breeds\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/cat-facts",
+      "parent_skill": "connectors/cat-facts",
+      "associated_playbooks": [
+        "playbooks/engineering"
+      ],
+      "intent_tags": [
+        "list_breeds",
+        "cat-facts",
+        "engineering",
+        "connector"
+      ],
+      "category": "cat-facts"
+    },
+    {
+      "function_name": "get_multiple_facts",
+      "execution_signature": "execute_skill(\"connectors/cat-facts\", \"get_multiple_facts\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/cat-facts",
+      "parent_skill": "connectors/cat-facts",
+      "associated_playbooks": [
+        "playbooks/engineering"
+      ],
+      "intent_tags": [
+        "get_multiple_facts",
+        "cat-facts",
+        "engineering",
+        "connector"
+      ],
+      "category": "cat-facts"
+    },
+    {
+      "function_name": "get_random_fact",
+      "execution_signature": "execute_skill(\"connectors/cat-facts\", \"get_random_fact\", args)",
+      "runtime_type": "node",
+      "parent_connector": "connectors/cat-facts",
+      "parent_skill": "connectors/cat-facts",
+      "associated_playbooks": [
+        "playbooks/engineering"
+      ],
+      "intent_tags": [
+        "get_random_fact",
+        "cat-facts",
+        "engineering",
+        "connector"
+      ],
+      "category": "cat-facts"
     }
   ]
 }

@@ -1,0 +1,33 @@
+{
+  "entity_type": "connector",
+  "entity_id": "connectors/cat-facts",
+  "version": "1.0.0",
+  "graph_version": "4d-v1",
+  "directions": {
+    "associated_playbooks": [
+      {
+        "ref": "playbooks/engineering",
+        "relationship": "domain_alignment"
+      }
+    ],
+    "associated_skills": [],
+    "exposed_functions": [],
+    "runtime_types": [
+      "node"
+    ],
+    "intent_tags": [
+      "cat-facts",
+      "engineering",
+      "connector"
+    ]
+  },
+  "metadata": {
+    "domain": "engineering",
+    "mcp": false,
+    "custom_client": true,
+    "function_count": 0,
+    "description": "Cat Facts API — random feline trivia from catfact.ninja",
+    "generated_by": "skill-author/create-connector-pack",
+    "generated_at": "2026-06-12T06:01:45.203Z"
+  }
+}
