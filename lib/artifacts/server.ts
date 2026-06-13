@@ -22,6 +22,8 @@ export type CreateDocumentCallbackProps = {
   dataStream: UIMessageStreamWriter<ChatMessage>;
   session: Session;
   modelId: string;
+  /** U9.1: Detailed specification for artifact content — passed from primary LLM */
+  specification?: string;
 };
 
 export type UpdateDocumentCallbackProps = {

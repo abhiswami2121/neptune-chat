@@ -21,7 +21,7 @@ export const createDocument = ({
 }: CreateDocumentProps) =>
   tool({
     description:
-      "Create an artifact. You MUST specify kind: use 'code' for any programming/algorithm request (creates a script), 'text' for essays/writing (creates a document), 'sheet' for spreadsheets/data.",
+      "Create an artifact. You MUST specify kind: use 'code' for any programming/algorithm request (creates a script), 'text' for essays/writing (creates a document), 'sheet' for spreadsheets/data. IMPORTANT: include a detailed 'specification' with key data, findings, structure, and requirements so the artifact generator produces accurate content.",
     inputSchema: z.object({
       title: z.string().describe("The title of the artifact"),
       kind: z
@@ -29,8 +29,14 @@ export const createDocument = ({
         .describe(
           "REQUIRED. 'code' for programming/algorithms, 'text' for essays/writing, 'sheet' for spreadsheets"
         ),
+      specification: z
+        .string()
+        .optional()
+        .describe(
+          "U9.1: Detailed specification for artifact content. Include key data points, findings, structure requirements, and anything the artifact generator needs to produce accurate content. Without this, the generator only sees the title and produces generic content."
+        ),
     }),
-    execute: async ({ title, kind }) => {
+    execute: async ({ title, kind, specification }) => {
       const id = generateUUID();
 
       dataStream.write({
@@ -72,6 +78,7 @@ export const createDocument = ({
         dataStream,
         session,
         modelId,
+        specification,
       });
 
       dataStream.write({ type: "data-finish", data: null, transient: true });
