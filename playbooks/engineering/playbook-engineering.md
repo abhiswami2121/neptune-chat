@@ -33,6 +33,18 @@ routines_count: 3
 
 # Engineering Domain Playbook
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://engineering/cardinal-rules`
+- `knowledge://engineering/connector-quirks`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - **Primary Stack:** Next.js 16 + React 18 + TypeScript + Tailwind v3
 - **UI Framework:** shadcn/ui (Radix primitives) — 28 components available

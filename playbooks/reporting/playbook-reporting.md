@@ -30,6 +30,18 @@ routines_count: 3
 
 # Reporting Domain Playbook
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://reporting/cardinal-rules`
+- `knowledge://reporting/query-patterns`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - **Primary Data Source:** Base44 reportingHub with 16 report actions
 - **SQL Warehouse:** jarvisDataGuard validated_query (read-only, 22 tables, 50K+ records)

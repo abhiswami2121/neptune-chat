@@ -32,6 +32,19 @@ routines_count: 3
 
 # Agent Orchestration Domain Playbook
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://orchestration/cardinal-rules`
+- `knowledge://orchestration/dispatch-patterns`
+- `knowledge://connector/quirks`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - **Agent Team:** Jarvis (primary orchestrator), Neptune Chat (frontend agent), Neptune V2 (code agent)
 - **Task Lifecycle:** classify intent → hydrate playbook → execute skill → self-heal

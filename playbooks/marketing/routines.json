@@ -6,12 +6,35 @@
   "routines": [
     {
       "name": "Campaign Performance Report",
-      "trigger_keywords": ["campaign roi", "conversion rate", "how is campaign"],
+      "trigger_keywords": [
+        "campaign roi",
+        "conversion rate",
+        "how is campaign"
+      ],
       "steps": [
-        {"action": "ghl.campaign.list", "description": "List active campaigns"},
-        {"action": "ghl.analytics.campaign", "input": "{campaignId}", "description": "Performance metrics"},
-        {"action": "ghl.analytics.lead_source", "input": "{campaignId}", "description": "Attribution report"}
-      ]
+        {
+          "action": "ghl.campaign.list",
+          "description": "List active campaigns"
+        },
+        {
+          "action": "ghl.analytics.campaign",
+          "input": "{campaignId}",
+          "description": "Performance metrics"
+        },
+        {
+          "action": "ghl.analytics.lead_source",
+          "input": "{campaignId}",
+          "description": "Attribution report"
+        }
+      ],
+      "pre_check_knowledge": {
+        "queries": [
+          "knowledge://marketing/cardinal-rules",
+          "knowledge://marketing/recent-patterns"
+        ],
+        "required": true,
+        "timeoutMs": 5000
+      }
     }
   ]
 }

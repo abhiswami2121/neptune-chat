@@ -331,6 +331,55 @@ export async function POST(request: Request) {
             })),
           });
         }
+
+        // U7.2-U7.3: Session-end hook — collect raw log + trigger knowledge extraction (non-blocking)
+        after(async () => {
+          try {
+            const lastAssistant = finishedMessages.findLast((m) => m.role === "assistant");
+            const lastUser = finishedMessages.findLast((m) => m.role === "user");
+            if (lastUser && lastAssistant) {
+              const { collectRawLog } = await import("@/lib/raw-logs/collector");
+              const { extractKnowledgeFromLog } = await import("@/lib/knowledge/extractor");
+
+              const turnId = generateUUID();
+              const userText = typeof lastUser.parts === "string"
+                ? lastUser.parts
+                : JSON.stringify(lastUser.parts);
+              const assistantText = typeof lastAssistant.parts === "string"
+                ? lastAssistant.parts
+                : JSON.stringify(lastAssistant.parts);
+
+              const logEntry = {
+                sessionId: id,
+                turnId,
+                userId: session?.user?.id ?? "anonymous",
+                userMessage: userText,
+                systemPrompt: systemMessage,
+                loadedPlaybook: playbooks?.active?.name,
+                outcomes: { success: true, durationMs: 0, errors: [] },
+                finalResponse: assistantText,
+              };
+
+              await collectRawLog(logEntry);
+              await extractKnowledgeFromLog({
+                ...logEntry,
+                id: turnId,
+                sessionId: id,
+                timestamp: new Date().toISOString(),
+                userId: session?.user?.id ?? "anonymous",
+                systemPromptHash: "",
+                knowledgeQueries: [],
+                toolCalls: [],
+                reasoning: "",
+                annotations: [],
+                knowledgeUpdates: [],
+                outcomes: { success: true, durationMs: 0, errors: [] },
+              });
+            }
+          } catch (err) {
+            console.warn("[session-end-hook] Extraction failed (non-fatal):", (err as Error).message);
+          }
+        });
       },
       onError: (error) => {
         if (

@@ -6,23 +6,88 @@
   "routines": [
     {
       "name": "Ship a Feature",
-      "trigger_keywords": ["ship", "deploy", "land", "merge", "release", "push to prod"],
+      "trigger_keywords": [
+        "ship",
+        "deploy",
+        "land",
+        "merge",
+        "release",
+        "push to prod"
+      ],
       "steps": [
-        {"action": "github.pr.create", "input": "{repo, title, head, base, body}", "description": "Create PR with ai-agent label"},
-        {"action": "github.workflow.list", "input": "{repo, branch}", "description": "Wait for CI checks"},
-        {"action": "github.pr.merge", "input": "{repo, prNumber}", "description": "Squash-merge to main"},
-        {"action": "vercel.deploy.redeploy", "input": "{projectId}", "description": "Trigger Vercel deploy"},
-        {"action": "slack.send_message", "channel": "#jarvis-admin", "description": "Deploy complete notification"}
-      ]
+        {
+          "action": "github.pr.create",
+          "input": "{repo, title, head, base, body}",
+          "description": "Create PR with ai-agent label"
+        },
+        {
+          "action": "github.workflow.list",
+          "input": "{repo, branch}",
+          "description": "Wait for CI checks"
+        },
+        {
+          "action": "github.pr.merge",
+          "input": "{repo, prNumber}",
+          "description": "Squash-merge to main"
+        },
+        {
+          "action": "vercel.deploy.redeploy",
+          "input": "{projectId}",
+          "description": "Trigger Vercel deploy"
+        },
+        {
+          "action": "slack.send_message",
+          "channel": "#jarvis-admin",
+          "description": "Deploy complete notification"
+        }
+      ],
+      "pre_check_knowledge": {
+        "queries": [
+          "knowledge://deploy/cardinal-rules",
+          "knowledge://deploy/recent-patterns",
+          "knowledge://deploy/env-var-dependencies",
+          "knowledge://vercel/deploy-patterns"
+        ],
+        "required": true,
+        "timeoutMs": 5000
+      }
     },
     {
       "name": "Diagnose Stale UI",
-      "trigger_keywords": ["stale", "not updating", "old version", "cache", "didn't change"],
+      "trigger_keywords": [
+        "stale",
+        "not updating",
+        "old version",
+        "cache",
+        "didn't change"
+      ],
       "steps": [
-        {"action": "vercel.deploy.list", "input": "{projectId, limit: 3}", "description": "Check recent deployments"},
-        {"action": "vercel.deploy.get", "input": "{deploymentId}", "description": "Verify build completed"},
-        {"action": "github.commit.list", "input": "{repo, branch: main, limit: 5}", "description": "Check commits landed"}
-      ]
+        {
+          "action": "vercel.deploy.list",
+          "input": "{projectId, limit: 3}",
+          "description": "Check recent deployments"
+        },
+        {
+          "action": "vercel.deploy.get",
+          "input": "{deploymentId}",
+          "description": "Verify build completed"
+        },
+        {
+          "action": "github.commit.list",
+          "input": "{repo, branch: main, limit: 5}",
+          "description": "Check commits landed"
+        }
+      ],
+      "pre_check_knowledge": {
+        "queries": [
+          "knowledge://deploy/cardinal-rules",
+          "knowledge://deploy/recent-patterns",
+          "knowledge://deploy/env-var-dependencies",
+          "knowledge://vercel/deploy-patterns"
+        ],
+        "required": true,
+        "timeoutMs": 5000
+      }
     }
   ]
 }

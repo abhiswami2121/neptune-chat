@@ -6,11 +6,31 @@
   "routines": [
     {
       "name": "Team Status Check",
-      "trigger_keywords": ["team", "who is working", "agent availability", "staffing"],
+      "trigger_keywords": [
+        "team",
+        "who is working",
+        "agent availability",
+        "staffing"
+      ],
       "steps": [
-        {"action": "base44.b44_query", "entity": "AgentAvailability", "description": "Current agent statuses"},
-        {"action": "slack.send_message", "channel": "#jarvis-admin", "description": "Staffing summary"}
-      ]
+        {
+          "action": "base44.b44_query",
+          "entity": "AgentAvailability",
+          "description": "Current agent statuses"
+        },
+        {
+          "action": "slack.send_message",
+          "channel": "#jarvis-admin",
+          "description": "Staffing summary"
+        }
+      ],
+      "pre_check_knowledge": {
+        "queries": [
+          "knowledge://hr/cardinal-rules"
+        ],
+        "required": true,
+        "timeoutMs": 5000
+      }
     }
   ]
 }

@@ -29,6 +29,19 @@ routines_count: 3
 
 # Vercel Discipline Playbook
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://vercel/cardinal-rules`
+- `knowledge://vercel/deploy-patterns`
+- `knowledge://vercel/connector-quirks`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - **Projects:** neptune-chat (prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl), neptune-v2 (prj_lEoqz6p4zgdrLlObPl845TI2ApOm)
 - **Auto-deploy:** Push to main triggers Vercel deployment automatically

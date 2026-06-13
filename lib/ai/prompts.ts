@@ -171,7 +171,34 @@ export const systemPrompt = ({
     ? `\n\n## 🧭 PLAYBOOK-ROUTER (Intent Map — Read FIRST)\n\n${routerContent}\n\n---\n*Above is the playbook router. Match the user's intent to ONE playbook before using any tools.*\n`
     : "";
 
-  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${routerSection}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
+  // U7.4: Pre-Check Knowledge directive — agent MUST query KG before executing routines
+  const preCheckKnowledge = `
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4 — Pattern A+2)
+
+Before executing ANY routine, you MUST query the Knowledge Graph to avoid repeating past mistakes:
+
+1. Call \`query_knowledge\` with the user's intent as the query
+2. Check results for:
+   - Cardinal rules that apply to this domain
+   - Recent patterns (lessons learned in last 7 days)
+   - Connector quirks (known behaviors and workarounds)
+   - If user mentions a specific entity (customer X, deploy Y), query that entity specifically
+3. Inject relevant KG findings into your context before taking action
+4. If the KG returns conflicting information (e.g., a lesson contradicts a playbook step), NOTE the conflict but FOLLOW the playbook — the conflict will be resolved by the self-healing loop
+
+**Gatekeeper routes that MUST trigger query_knowledge:**
+- "how do we..." → query KG for existing workflows
+- "what do we know about..." → query KG for facts and patterns
+- "verify..." or "is this still right" → query KG for recent lessons that may invalidate old knowledge
+- Before any billing, support, deployment, or customer enrollment routine
+
+The KG is Postgres-native (pgvector + ltree). It co-exists with playbooks:
+- Playbooks = HOW (SOPs)
+- Knowledge Graph = WHAT (facts, patterns, lessons)
+- Raw Logs = WHEN (immutable audit trail)
+`;
+
+  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${routerSection}\n\n${preCheckKnowledge}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
 };
 
 export const codePrompt = `

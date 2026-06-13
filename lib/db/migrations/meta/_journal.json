@@ -15,6 +15,20 @@
       "when": 1780888886744,
       "tag": "0001_careful_ser_duncan",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1781256000000,
+      "tag": "0002_kg_schema",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1781257000000,
+      "tag": "0003_raw_logs",
+      "breakpoints": true
     }
   ]
 }

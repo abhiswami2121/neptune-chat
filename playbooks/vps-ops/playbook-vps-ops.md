@@ -27,6 +27,18 @@ routines_count: 3
 
 # VPS Ops Domain Playbook
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://vps-ops/cardinal-rules`
+- `knowledge://vps-ops/recent-patterns`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - **VPS Provider:** Hostinger (hostingerBridge)
 - **Process Manager:** pm2 for Claude Agent API + background daemons

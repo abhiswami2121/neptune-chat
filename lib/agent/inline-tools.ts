@@ -19,6 +19,7 @@ import {
 } from "@/lib/ai/tools/create-workflow";
 import { selfCode } from "@/lib/ai/tools/self-code";
 import { loadSkill } from "@/lib/ai/tools/load-skill";
+import { queryKnowledge } from "@/lib/ai/tools/query-knowledge";
 
 // ── Configuration ────────────────────────────────────────────────────────
 
@@ -1515,6 +1516,8 @@ export const inlineTools = {
   postV2Session,
   streamV2Progress,
   controlV2Session,
+  // ── U7.4 Knowledge Graph Gatekeeper (Pattern A+2, 8th tool) ──
+  queryKnowledge,
   // ── Legacy Integration Discovery ──
   listIntegrations,
 };
@@ -1546,6 +1549,8 @@ export const TOOL_REQUIREMENTS: Record<string, string[]> = {
   postV2Session: [],
   streamV2Progress: [],
   controlV2Session: [],
+  // ── U7.4 Knowledge Graph Gatekeeper ──
+  queryKnowledge: ["POSTGRES_URL"],
   // ── Legacy Integration Discovery ──
   listIntegrations: [],
 };
@@ -1613,6 +1618,7 @@ export const GATEKEEPER_TOOL_NAMES = [
   "loadSkill",
   "selfCode",
   "runWorkflow",   // U2.1.D: 7th gatekeeper tool — U3.6 Workflow Engine
+  "queryKnowledge", // U7.4: 8th gatekeeper tool — Postgres KG query (Pattern A+2 documented exception)
 ];
 
 /**

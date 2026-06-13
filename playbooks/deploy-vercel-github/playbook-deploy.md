@@ -1,5 +1,19 @@
 # Deploy Playbook (Chat + V2 + VPS)
 
+
+## 🧠 PRE-CHECK KNOWLEDGE (U7.4)
+
+Before executing any routine in this domain, the agent MUST query the Knowledge Graph:
+
+- `knowledge://deploy/cardinal-rules`
+- `knowledge://deploy/recent-patterns`
+- `knowledge://deploy/env-var-dependencies`
+- `knowledge://vercel/deploy-patterns`
+
+If the user query mentions a specific entity (customer, transaction, deploy, connector), also query that entity for context.
+
+**Cardinal rules from the KG get TOP PRIORITY (confidence=1.0).**
+If the KG returns conflicting information with this playbook, NOTE the conflict but FOLLOW the playbook — the U4.1 self-healing loop will resolve.
 ## Operational Knowledge
 - Neptune Chat: prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl @ neptune-chat-ashy.vercel.app
 - Neptune V2: prj_lEoqz6p4zgdrLlObPl845TI2ApOm @ neptune-v2.vercel.app
