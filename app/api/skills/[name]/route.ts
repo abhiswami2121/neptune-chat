@@ -10,6 +10,18 @@ import { requireAllowlist } from "@/lib/auth/require-allowlist";
 const SHARED_SKILLS_ROOT = "/home/neptune/_shared-skills";
 const REGISTRY_PATH = join(SHARED_SKILLS_ROOT, "registry.json");
 
+// Minimal inline fallback for Vercel serverless (deep-research + core skills)
+const INLINE_FALLBACK: Record<string, any[]> = {
+  capabilities: [
+    { name: "code-review", version: "1.0.0", path: "capabilities/code-review", primary_domain: "coding" },
+    { name: "response-formatting", version: "1.0.0", path: "capabilities/response-formatting", primary_domain: "support-triage" },
+    { name: "research", version: "1.0.0", path: "capabilities/research", primary_domain: "reporting" },
+    { name: "playbook-refiner", version: "1.0.0", path: "capabilities/playbook-refiner", primary_domain: "agent-orchestration" },
+    { name: "artifact-response-pattern", version: "1.0.0", path: "capabilities/artifact-response-pattern", primary_domain: "coding" },
+    { name: "deep-research", version: "1.0.0", path: "capabilities/deep-research", primary_domain: "planning-research", env_required: ["SMITHERY_API_KEY"], env_optional: ["TAVILY_API_KEY", "EXA_API_KEY"] },
+  ],
+};
+
 /** Simple YAML frontmatter parser (avoids gray-matter dependency) */
 function parseFrontmatter(md: string): { data: Record<string, any>; content: string } {
   if (!md.startsWith("---")) return { data: {}, content: md };
@@ -42,7 +54,7 @@ function loadRegistry(): Record<string, any> | null {
 }
 
 function findSkill(name: string): { entry: any; kind: string; skillPath: string } | null {
-  const registry = loadRegistry();
+  const registry = loadRegistry() || INLINE_FALLBACK;
   if (!registry) return null;
 
   for (const kind of ["connectors", "functions", "capabilities"] as const) {

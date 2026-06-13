@@ -76,8 +76,9 @@ const INLINE_REGISTRY: Registry = {
     { name: "research", version: "1.0.0", path: "capabilities/research", primary_domain: "reporting", also_in: [], dependencies: [] },
     { name: "playbook-refiner", version: "1.0.0", path: "capabilities/playbook-refiner", primary_domain: "agent-orchestration", also_in: [], dependencies: [] },
     { name: "artifact-response-pattern", version: "1.0.0", path: "capabilities/artifact-response-pattern", primary_domain: "coding", also_in: [], dependencies: [] },
+    { name: "deep-research", version: "1.0.0", path: "capabilities/deep-research", primary_domain: "planning-research", also_in: ["agent-orchestration"], dependencies: [], env_required: ["SMITHERY_API_KEY"], env_optional: ["TAVILY_API_KEY", "EXA_API_KEY"] },
   ],
-  summary: { totalConnectors: 13, totalFunctions: 10, totalCapabilities: 5, totalSkills: 28 },
+  summary: { totalConnectors: 13, totalFunctions: 10, totalCapabilities: 6, totalSkills: 29 },
 };
 
 export const GET = requireAllowlist(async () => {
