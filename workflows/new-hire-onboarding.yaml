@@ -1,0 +1,108 @@
+# Workflow: New Hire Onboarding
+# U3.6 Workflow Engine — Starter Template 5/5
+# Trigger: Manual (hire name/email) → Create GHL contact → Send welcome SMS → Post to Slack → Create Linear ticket
+
+id: new-hire-onboarding
+name: "New Hire Onboarding"
+description: "Onboard a new team member — create CRM contact, send welcome SMS, notify Slack, create Linear task"
+category: Operations
+source: manual
+createdAt: "2026-06-12"
+updatedAt: "2026-06-12"
+
+nodes:
+  - id: nho-trigger
+    type: trigger
+    position: { x: 250, y: 0 }
+    data:
+      label: "Manual Trigger (New Hire Details)"
+      nodeType: trigger
+      triggerType: manual
+
+  - id: nho-ghl-contact
+    type: action
+    position: { x: 250, y: 130 }
+    data:
+      label: "Create GHL Contact"
+      nodeType: action
+      connectorId: ghl
+      toolName: createContact
+      params:
+        source: onboarding
+
+  - id: nho-parallel
+    type: parallel
+    position: { x: 250, y: 260 }
+    data:
+      label: "Parallel: SMS + Slack"
+      nodeType: parallel
+
+  - id: nho-sms
+    type: action
+    position: { x: 100, y: 390 }
+    data:
+      label: "Send Welcome SMS"
+      nodeType: action
+      connectorId: ghl
+      toolName: sendSms
+      params:
+        template: welcome_new_hire
+
+  - id: nho-slack
+    type: action
+    position: { x: 400, y: 390 }
+    data:
+      label: "Post to #jarvis-admin"
+      nodeType: action
+      connectorId: slack
+      toolName: postMessage
+      params:
+        channel: jarvis-admin
+        template: new_hire_announcement
+
+  - id: nho-linear
+    type: action
+    position: { x: 250, y: 520 }
+    data:
+      label: "Create Linear Onboarding Ticket"
+      nodeType: action
+      connectorId: linear
+      toolName: createIssue
+      params:
+        labels:
+          - onboarding
+          - new-hire
+        priority: high
+
+  - id: nho-output
+    type: output
+    position: { x: 250, y: 650 }
+    data:
+      label: "Report Completion"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+edges:
+  - id: e-nho-1
+    source: nho-trigger
+    target: nho-ghl-contact
+  - id: e-nho-2
+    source: nho-ghl-contact
+    target: nho-parallel
+  - id: e-nho-3
+    source: nho-parallel
+    target: nho-sms
+  - id: e-nho-4
+    source: nho-parallel
+    target: nho-slack
+  - id: e-nho-5
+    source: nho-sms
+    target: nho-linear
+  - id: e-nho-6
+    source: nho-slack
+    target: nho-linear
+  - id: e-nho-7
+    source: nho-linear
+    target: nho-output

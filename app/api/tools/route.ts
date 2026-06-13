@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 /**
  * U2.1.C — Gatekeeper Tools Endpoint
@@ -12,7 +13,7 @@ import { NextResponse } from "next/server";
  * through load_skill and execute_skill — the agent loads detailed
  * playbooks on demand rather than having 400+ tools in the array.
  */
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const tools = [
     {
       name: "view_file",
@@ -59,4 +60,4 @@ export async function GET() {
     pattern: "Documentation-Driven Runtime (Pattern A)",
     version: "2.1.0",
   });
-}
+});

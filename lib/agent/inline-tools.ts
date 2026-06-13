@@ -1612,6 +1612,7 @@ export const GATEKEEPER_TOOL_NAMES = [
   "listPlaybooks",
   "loadSkill",
   "selfCode",
+  "runWorkflow",   // U2.1.D: 7th gatekeeper tool — U3.6 Workflow Engine
 ];
 
 /**

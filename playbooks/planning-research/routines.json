@@ -1,0 +1,265 @@
+{
+  "domain": "planning-research",
+  "priority": "P0",
+  "version": "1.0.0",
+  "created": "2026-06-13",
+  "mission": "U5 Planning & Research Domain — 15 trigger-keyword routines",
+  "routines": [
+    {
+      "name": "Write PRD",
+      "trigger_keywords": ["write prd", "create prd", "product requirement", "spec out", "document requirements", "prd for", "feature spec", "requirement doc"],
+      "steps": [
+        {"action": "search_cortex", "input": "{topic}", "description": "Search existing PRDs and cortex artifacts"},
+        {"action": "search_wiki", "input": "{topic}", "description": "Search wiki for related documents"},
+        {"action": "extract_cardinal_rules", "input": "{domain}", "description": "Get LOCKED constraints"},
+        {"action": "load_skill:draft-prd", "input": "{template}", "description": "Load 12-section PRD template"},
+        {"action": "deep_research", "input": "{topic}", "description": "Optional: parallel research if domain knowledge needed"},
+        {"action": "draft_document", "input": "{sections, research}", "description": "Draft full PRD"},
+        {"action": "generate_diagrams", "input": "{architecture}", "description": "Architecture diagrams if applicable"},
+        {"action": "save_to_cortex", "input": "{content, path: jarvis/prd/}", "description": "Persist PRD"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "research", "steps": ["search_cortex", "search_wiki"]},
+        {"group": "setup", "steps": ["extract_cardinal_rules", "load_skill:draft-prd"]}
+      ]
+    },
+    {
+      "name": "Draft TRD",
+      "trigger_keywords": ["draft trd", "write trd", "technical design", "architecture doc", "design document", "system design", "technical spec", "tech spec"],
+      "steps": [
+        {"action": "load_prd", "input": "{prd_path}", "description": "Load the PRD this TRD implements"},
+        {"action": "extract_cardinal_rules", "input": "engineering, deploy", "description": "Get technical constraints"},
+        {"action": "load_skill:draft-trd", "input": "{template}", "description": "Load TRD template with Mermaid + API contracts"},
+        {"action": "deep_research", "input": "{technical_approach}", "description": "Research existing patterns and approaches"},
+        {"action": "generate_mermaid", "input": "{components}", "description": "Architecture diagrams"},
+        {"action": "define_api_contracts", "input": "{endpoints}", "description": "Request/response schemas"},
+        {"action": "define_data_models", "input": "{schema}", "description": "Database schema changes"},
+        {"action": "save_to_cortex", "input": "{content, path: jarvis/prd/}", "description": "Persist TRD"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "context", "steps": ["load_prd", "extract_cardinal_rules"]},
+        {"group": "docs", "steps": ["define_api_contracts", "define_data_models", "generate_mermaid"]}
+      ]
+    },
+    {
+      "name": "Create Implementation Plan",
+      "trigger_keywords": ["implementation plan", "impl plan", "build plan", "execution plan", "sprint plan", "phase plan", "roadmap", "project plan"],
+      "steps": [
+        {"action": "load_artifacts", "input": "{prd_path, trd_path}", "description": "Load PRD + TRD"},
+        {"action": "extract_cardinal_rules", "input": "{domain}", "description": "Get LOCKED constraints"},
+        {"action": "load_skill:draft-impl-plan", "input": "{template}", "description": "Load impl plan template"},
+        {"action": "phase_breakdown", "input": "{scope, constraints}", "description": "Break into phases with turn budgets"},
+        {"action": "dependency_graph", "input": "{phases}", "description": "Map phase dependencies"},
+        {"action": "plan_mode_check", "input": "{phase_count}", "description": "Enter plan mode if phases >= 3"},
+        {"action": "save_to_cortex", "input": "{content, path: jarvis/prd/}", "description": "Persist implementation plan"}
+      ],
+      "requires_plan_mode": true,
+      "plan_mode_threshold": 3,
+      "parallel_steps": [
+        {"group": "context", "steps": ["load_artifacts", "extract_cardinal_rules"]},
+        {"group": "planning", "steps": ["phase_breakdown", "dependency_graph"]}
+      ]
+    },
+    {
+      "name": "Deep Research",
+      "trigger_keywords": ["research", "investigate", "explore", "compare", "state of", "deep dive", "learn about", "background on", "what is", "how does", "survey"],
+      "steps": [
+        {"action": "define_question", "input": "{query}", "description": "Scope research question"},
+        {"action": "parallel_engine", "input": "{query, sources: 5}", "description": "Fire 5 sources in parallel"},
+        {"action": "synthesize", "input": "{results}", "description": "Weight by confidence + recency + relevance"},
+        {"action": "cross_reference", "input": "{findings}", "description": "Check against cortex"},
+        {"action": "format_output", "input": "{synthesis}", "description": "Structured: findings, sources, confidence, recommendations"},
+        {"action": "save_to_cortex", "input": "{output, path: jarvis/cortex/}", "description": "Persist if reusable"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_sources": ["tavilySearch", "exaSearch", "githubCodeSearch", "webSearch", "smitheryMcpSearch"],
+      "per_source_timeout_ms": 30000,
+      "min_sources_required": 2
+    },
+    {
+      "name": "Gap Analysis",
+      "trigger_keywords": ["gap analysis", "gap", "what is missing", "audit", "compare current vs target", "delta", "discrepancy", "what's missing"],
+      "steps": [
+        {"action": "define_current_state", "input": "{scope}", "description": "Current state from cortex/codebase/input"},
+        {"action": "define_target_state", "input": "{prd_or_requirements}", "description": "Target state from PRDs/requirements"},
+        {"action": "load_skill:gap-analysis", "input": "{template}", "description": "Load gap analysis template"},
+        {"action": "diff_analysis", "input": "{current, target}", "description": "Systematic feature/capability diff"},
+        {"action": "classify_gaps", "input": "{gaps}", "description": "Critical/high/medium/low classification"},
+        {"action": "remediation_plan", "input": "{classified_gaps}", "description": "Generate fixes with effort estimates"},
+        {"action": "save_to_cortex", "input": "{content, path: jarvis/prd/}", "description": "Persist gap analysis"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "state_definitions", "steps": ["define_current_state", "define_target_state"]}
+      ]
+    },
+    {
+      "name": "Plan Mode (Multi-Phase Gate)",
+      "trigger_keywords": ["plan mode", "approve plan", "review plan", "multi-phase", "complex task", "large plan"],
+      "steps": [
+        {"action": "detect_phases", "input": "{task}", "description": "Count phases in task"},
+        {"action": "load_workflow:plan-mode-propose", "input": "{phases}", "description": "Load plan mode workflow"},
+        {"action": "render_proposal", "input": "{phases, budget, criteria}", "description": "Render Card in chat"},
+        {"action": "wait_for_user", "input": "{proposal_id}", "description": "BLOCK until approve/modify/cancel"},
+        {"action": "execute_or_modify", "input": "{user_choice}", "description": "Execute approved or apply modifications"},
+        {"action": "annotate_decision", "input": "{outcome}", "description": "Record approval status"}
+      ],
+      "requires_plan_mode": true,
+      "auto_detect": true,
+      "phase_threshold": 3
+    },
+    {
+      "name": "Mission Dispatch",
+      "trigger_keywords": ["dispatch mission", "create mission", "start mission", "launch task", "mission", "deploy mission"],
+      "steps": [
+        {"action": "define_scope", "input": "{objectives}", "description": "Mission objectives and success criteria"},
+        {"action": "load_skill:mission-dispatcher", "input": "{template}", "description": "Load mission dispatcher"},
+        {"action": "generate_yaml", "input": "{scope}", "description": "Generate mission YAML file"},
+        {"action": "create_wrapper", "input": "{yaml}", "description": "hybridDispatch wrapper"},
+        {"action": "save_mission", "input": "{file, path: jarvis/cortex/missions/}", "description": "Persist mission"},
+        {"action": "dispatch", "input": "{mission_id}", "description": "Route to agent-orchestration if needed"},
+        {"action": "track_progress", "input": "{mission_id}", "description": "Register in annotation loop"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "prep", "steps": ["define_scope", "load_skill:mission-dispatcher"]}
+      ]
+    },
+    {
+      "name": "Architecture Diagram",
+      "trigger_keywords": ["diagram", "architecture diagram", "flowchart", "sequence diagram", "mermaid", "visualize", "draw", "illustrate"],
+      "steps": [
+        {"action": "identify_system", "input": "{target}", "description": "System or flow to diagram"},
+        {"action": "load_skill:architecture-diagrammer", "input": "{diagram_type}", "description": "Load diagrammer"},
+        {"action": "select_type", "input": "{analysis}", "description": "Flowchart/sequence/class/ER/C4"},
+        {"action": "generate_mermaid", "input": "{structure}", "description": "Generate Mermaid syntax"},
+        {"action": "validate", "input": "{diagram}", "description": "Check completeness"},
+        {"action": "embed_or_save", "input": "{diagram, target_doc}", "description": "Embed in PRD/TRD or save"}
+      ],
+      "requires_plan_mode": false,
+      "diagram_types": ["flowchart", "sequence", "class_diagram", "er_diagram", "c4_context", "c4_container", "state_diagram", "gantt_chart"]
+    },
+    {
+      "name": "Extract Cardinal Rules",
+      "trigger_keywords": ["cardinal rules", "locked rules", "constraints", "rules to follow", "what rules apply", "governing rules"],
+      "steps": [
+        {"action": "query_cortex", "input": "{domain}", "description": "Pull rules from cortex"},
+        {"action": "query_memory", "input": "{domain}", "description": "Pull rules from save_memory"},
+        {"action": "load_skill:cardinal-rules-extract", "input": "{template}", "description": "Load rules extractor"},
+        {"action": "categorize", "input": "{rules}", "description": "By domain: billing, deploy, security, engineering"},
+        {"action": "deduplicate", "input": "{categorized}", "description": "Remove duplicates"},
+        {"action": "rank_by_priority", "input": "{unique_rules}", "description": "P0 > P1 > P2"},
+        {"action": "format_output", "input": "{ranked}", "description": "Structured: rule_ids + sources"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "fetch", "steps": ["query_cortex", "query_memory"]}
+      ]
+    },
+    {
+      "name": "Synthesize Sources",
+      "trigger_keywords": ["synthesize", "combine", "merge", "consolidate", "summary of", "bring together", "unify"],
+      "steps": [
+        {"action": "collect_sources", "input": "{inputs}", "description": "Gather all research outputs"},
+        {"action": "load_skill:source-synthesis", "input": "{template}", "description": "Load synthesis template"},
+        {"action": "weight_sources", "input": "{sources}", "description": "Confidence + recency + relevance"},
+        {"action": "merge_findings", "input": "{weighted}", "description": "Merge overlapping, resolve contradictions"},
+        {"action": "generate_recommendations", "input": "{merged}", "description": "Confidence-weighted recommendations"},
+        {"action": "save_to_cortex", "input": "{synthesis, path: jarvis/cortex/}", "description": "Persist if reusable"}
+      ],
+      "requires_plan_mode": false,
+      "weight_factors": {"confidence": 0.4, "recency": 0.3, "relevance": 0.3}
+    },
+    {
+      "name": "Design Workflow",
+      "trigger_keywords": ["design workflow", "create workflow", "new workflow", "workflow for", "build workflow", "define workflow"],
+      "steps": [
+        {"action": "define_purpose", "input": "{intent}", "description": "Workflow purpose and trigger"},
+        {"action": "load_skill:workflow-designer", "input": "{template}", "description": "Load workflow designer"},
+        {"action": "scaffold_yaml", "input": "{purpose, steps}", "description": "Generate YAML structure"},
+        {"action": "define_steps", "input": "{actions}", "description": "Action, input, description per step"},
+        {"action": "validate_deps", "input": "{steps}", "description": "Check no circular dependencies"},
+        {"action": "save_workflow", "input": "{yaml, path: playbooks/<domain>/workflows/}", "description": "Persist workflow YAML"}
+      ],
+      "requires_plan_mode": false
+    },
+    {
+      "name": "Save to Cortex",
+      "trigger_keywords": ["save this", "persist", "store", "archive", "keep this", "remember this", "save for later"],
+      "steps": [
+        {"action": "classify_content", "input": "{content}", "description": "PRD/TRD/plan/research/general"},
+        {"action": "load_skill:save-to-cortex", "input": "{template}", "description": "Load save skill"},
+        {"action": "format_frontmatter", "input": "{content, type}", "description": "YAML frontmatter: title, date, version, status"},
+        {"action": "write_file", "input": "{formatted, path}", "description": "Write via VPS FS bridge"},
+        {"action": "verify_write", "input": "{path}", "description": "Confirm file written correctly"},
+        {"action": "annotate_save", "input": "{path, size}", "description": "Record in annotation loop"}
+      ],
+      "requires_plan_mode": false,
+      "target_paths": {
+        "prd": "jarvis/prd/{title}-{date}.md",
+        "trd": "jarvis/prd/{title}-TRD-{date}.md",
+        "plan": "jarvis/prd/{title}-PLAN-{date}.md",
+        "research": "jarvis/cortex/{title}-{date}.md",
+        "mission": "jarvis/cortex/missions/{title}-{date}.yaml"
+      }
+    },
+    {
+      "name": "Plan Review",
+      "trigger_keywords": ["review plan", "check plan", "validate plan", "plan quality", "is this plan good", "plan audit"],
+      "steps": [
+        {"action": "load_plan", "input": "{path}", "description": "Load plan from jarvis/prd/"},
+        {"action": "extract_cardinal_rules", "input": "{domain}", "description": "Get validation rules"},
+        {"action": "check_completeness", "input": "{plan}", "description": "All required sections present"},
+        {"action": "check_consistency", "input": "{plan}", "description": "No internal contradictions"},
+        {"action": "check_feasibility", "input": "{plan, constraints}", "description": "Within system capabilities"},
+        {"action": "cross_reference", "input": "{plan, cortex}", "description": "Check for conflicts with existing plans"},
+        {"action": "generate_report", "input": "{findings}", "description": "Findings + recommendations"}
+      ],
+      "requires_plan_mode": false,
+      "parallel_steps": [
+        {"group": "validation", "steps": ["check_completeness", "check_consistency", "check_feasibility"]}
+      ]
+    },
+    {
+      "name": "Full Planning Pipeline",
+      "trigger_keywords": ["full plan", "end to end plan", "complete plan", "plan everything", "master plan", "comprehensive plan"],
+      "steps": [
+        {"action": "deep_research", "input": "{domain}", "description": "5-source parallel research"},
+        {"action": "draft_prd", "input": "{research}", "description": "12-section PRD"},
+        {"action": "draft_trd", "input": "{prd}", "description": "TRD with diagrams + contracts"},
+        {"action": "draft_impl_plan", "input": "{prd, trd}", "description": "Phased implementation plan"},
+        {"action": "plan_mode_propose", "input": "{phases}", "description": "User approval gate"},
+        {"action": "dispatch_missions", "input": "{approved_phases}", "description": "Dispatch executable phases"},
+        {"action": "save_all_artifacts", "input": "{all}", "description": "Persist everything to jarvis/prd/"},
+        {"action": "full_annotation", "input": "{pipeline}", "description": "Complete pipeline annotation"}
+      ],
+      "requires_plan_mode": true,
+      "plan_mode_threshold": 3,
+      "dependencies": {
+        "draft_prd": ["deep_research"],
+        "draft_trd": ["draft_prd"],
+        "draft_impl_plan": ["draft_trd"],
+        "plan_mode_propose": ["draft_impl_plan"],
+        "dispatch_missions": ["plan_mode_propose"]
+      },
+      "parallel_steps": [
+        {"group": "finalize", "steps": ["save_all_artifacts", "full_annotation"]}
+      ]
+    },
+    {
+      "name": "Quick Planning Scan",
+      "trigger_keywords": ["quick scan", "fast plan", "brief overview", "plan summary", "quick assessment", "tl;dr plan"],
+      "steps": [
+        {"action": "scope_intent", "input": "{query}", "description": "Narrow to essential needs"},
+        {"action": "search_cortex", "input": "{topic}", "description": "Check existing knowledge"},
+        {"action": "fast_research", "input": "{topic}", "description": "Single-source or skip if cortex has enough"},
+        {"action": "brief_plan", "input": "{findings}", "description": "Condensed plan: goal + 1-3 phases + budget"},
+        {"action": "output_only", "input": "{plan}", "description": "Return without saving to cortex"}
+      ],
+      "requires_plan_mode": false,
+      "fast_path": true
+    }
+  ]
+}

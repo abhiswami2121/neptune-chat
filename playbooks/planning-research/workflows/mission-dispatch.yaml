@@ -1,0 +1,130 @@
+# Mission Dispatch Workflow
+# Purpose: Scope → YAML mission file → hybridDispatch → track execution
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "dispatch mission", "create mission", "start mission"
+
+name: mission-dispatch
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - dispatch mission
+  - create mission
+  - start mission
+  - launch task
+  - mission
+  - deploy mission
+
+phases:
+  - id: scope_mission
+    name: Define Mission Scope
+    steps:
+      - id: define_objectives
+        action: define_objectives
+        input:
+          intent: "{user_intent}"
+          plan: "{plan_reference}"
+        description: Define mission objectives and outcomes
+      - id: define_criteria
+        action: define_success_criteria
+        input:
+          objectives: "{objectives}"
+        description: Measurable completion conditions
+      - id: estimate_resources
+        action: estimate_resources
+        input:
+          objectives: "{objectives}"
+        description: Estimate turns, agents, and duration needed
+
+  - id: generate_mission_file
+    name: Generate Mission YAML File
+    depends_on:
+      - scope_mission
+    steps:
+      - id: scaffold_yaml
+        action: mission_dispatcher_scaffold
+        input:
+          name: "{mission_name}"
+          objectives: "{objectives}"
+          criteria: "{success_criteria}"
+          resources: "{estimates}"
+        description: Generate YAML mission file structure
+      - id: define_steps
+        action: define_mission_steps
+        input:
+          objectives: "{objectives}"
+        description: Define executable steps with [PARALLEL] markers
+      - id: add_tracking
+        action: add_tracking_config
+        input:
+          steps: "{defined_steps}"
+        description: Add annotation tracking hooks
+
+  - id: dispatch
+    name: Dispatch Mission
+    depends_on:
+      - generate_mission_file
+    steps:
+      - id: save_mission_file
+        action: save_to_cortex
+        input:
+          content: "{mission_yaml}"
+          path: "jarvis/cortex/missions/{mission_name}-{date}.yaml"
+          type: "mission"
+        description: Persist mission to cortex
+      - id: hybrid_dispatch
+        action: hybrid_dispatch
+        input:
+          mission_file: "{saved_path}"
+          priority: "{priority}"
+        description: Dispatch via agent-orchestration domain
+      - id: notify
+        action: slack_notify
+        input:
+          channel: "jarvis-admin"
+          message: "🚀 Mission dispatched: {mission_name} ({step_count} steps, {estimated_turns}t)"
+        description: Notify jarvis-admin of mission launch
+        optional: true
+
+  - id: track_progress
+    name: Track Mission Progress
+    depends_on:
+      - dispatch
+    steps:
+      - id: register_tracking
+        action: register_annotation_tracking
+        input:
+          mission_id: "{mission_id}"
+          steps: "{defined_steps}"
+        description: Register mission in annotation loop
+      - id: annotate_dispatch
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "mission-dispatch"
+          outcome: "success"
+          duration_ms: "{duration}"
+          learning: "Mission dispatched: {mission_id}, {step_count} steps, {estimated_turns}t budget"
+
+success_criteria:
+  - Mission objectives clearly defined
+  - Success criteria measurable
+  - YAML mission file complete and valid
+  - Mission persisted to jarvis/cortex/missions/
+  - Dispatch registered (hybrid or direct)
+  - Annotation tracking enabled
+
+output_schema:
+  type: object
+  properties:
+    mission_id: string
+    mission_name: string
+    objectives: array
+    success_criteria: array
+    steps: array
+    estimated_turns: number
+    priority: string
+    dispatched_at: string
+    tracking_id: string

@@ -1,30 +1,44 @@
 /**
- * /library — U2.4.D 4-Library Tab View
+ * /library — Enterprise Knowledge Files Library
  *
- * Tabs: Playbooks | Connectors | Skills | Functions
- * Each tab is sortable + filterable with shadcn components.
- * Mobile-optimized: 44px touch targets, responsive table.
+ * PHASE C: Knowledge Files Redesign — shadcn-based enterprise design.
+ *
+ * Features:
+ *   - LibraryToolbar: Search, Filter, Sort, ViewToggle (grid/table)
+ *   - Tabbed: Playbooks | Connectors | Skills | Functions | PRDs | Wiki | Secrets
+ *   - LibraryGrid (card view) + LibraryTable (table view) toggle
+ *   - DetailDrawer: opens a Sheet with item details, edit, execute
+ *   - Live counts from API endpoints
+ *   - Responsive: 1 col mobile, 2 tablet, 3 desktop
+ *   - Skeleton loading + Empty state + Dark mode parity
  */
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Input } from "@/components/ui/input";
-import Link from "next/link";
 import {
-  BookOpen,
-  Plug,
-  Sparkles,
-  Zap,
-  Search,
-  ArrowUpDown,
-  ExternalLink,
-  Shield,
+  BookOpenIcon,
+  FileTextIcon,
+  FolderGit2Icon,
+  FunctionSquareIcon,
+  PlugIcon,
+  ShieldIcon,
+  SparklesIcon,
+  TargetIcon,
+  ZapIcon,
 } from "lucide-react";
+import Link from "next/link";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { EmptyState } from "@/components/library/empty-state";
+import { DetailDrawer } from "@/components/library/detail-drawer";
+import { LibraryCard, type LibraryItem } from "@/components/library/library-card";
+import { LibraryGrid } from "@/components/library/library-grid";
+import { LibraryTable } from "@/components/library/library-table";
+import { LibraryToolbar, type ViewMode } from "@/components/library/library-toolbar";
+import { cn } from "@/lib/utils";
 
-// ── Types ───────────────────────────────────────────────────────────────────
+// ── Types ────────────────────────────────────────────────────────────────────
 
 interface PlaybookEntry {
   domain: string;
@@ -66,56 +80,225 @@ interface FunctionEntry {
   associated_playbooks: string[];
 }
 
-// ── Data Fetching ───────────────────────────────────────────────────────────
+// ── Shared state per tab ─────────────────────────────────────────────────────
 
-function usePlaybooks() {
-  const [data, setData] = useState<PlaybookEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  useEffect(() => {
-    fetch("/api/skills")
-      .then((r) => r.json())
-      .then((skillsData) => {
-        // Build playbook list from what we know
-        const playbooks: PlaybookEntry[] = [
-          { domain: "Billing", path: "playbooks/billing", priority: "P0", routines_count: 4, connectors: ["nmi","hyperswitch","base44","slack","ghl"], description: "Payment processing, refunds, CoF health audits", intent_tags: ["refund","charge","payment","decline"] },
-          { domain: "Customer Support", path: "playbooks/customer-support", priority: "P0", routines_count: 2, connectors: ["base44","slack","ghl","vapi","linear","nmi","hyperswitch"], description: "Customer 360, ticket triage, escalations", intent_tags: ["ticket","support","look up","customer"] },
-          { domain: "Disputes", path: "playbooks/disputes", priority: "P0", routines_count: 2, connectors: ["forth","base44","slack"], description: "Credit disputes, FCRA letters, evidence submission", intent_tags: ["dispute","credit report","fcra","bureau"] },
-          { domain: "Agent Orchestration", path: "playbooks/agent-orchestration", priority: "P1", routines_count: 3, connectors: ["base44","github","vercel","slack"], description: "Agent routing, dispatch, multi-agent coordination", intent_tags: ["orchestrate","dispatch","handoff"] },
-          { domain: "Deploy (Vercel+GitHub)", path: "playbooks/deploy-vercel-github", priority: "P1", routines_count: 2, connectors: ["github","vercel","slack"], description: "Vercel deployments, GitHub PR workflows", intent_tags: ["ship","deploy","merge","release"] },
-          { domain: "Engineering", path: "playbooks/engineering", priority: "P1", routines_count: 3, connectors: ["github","vercel","wiki"], description: "Code review, refactoring, PRDs, architecture", intent_tags: ["code review","architecture","PRD"] },
-          { domain: "Reporting", path: "playbooks/reporting", priority: "P1", routines_count: 3, connectors: ["base44","slack","wiki"], description: "Operational dashboards, morning pulse", intent_tags: ["reporting","dashboard","analytics"] },
-          { domain: "Vercel Discipline", path: "playbooks/vercel-discipline", priority: "P1", routines_count: 3, connectors: ["vercel","github"], description: "Vercel deployment standards, security patterns", intent_tags: ["vercel","deploy","env","build"] },
-          { domain: "VPS Ops", path: "playbooks/vps-ops", priority: "P1", routines_count: 3, connectors: ["base44","slack"], description: "VPS management, pm2, nginx, Cloudflare", intent_tags: ["VPS","pm2","server","health"] },
-          { domain: "HR", path: "playbooks/HR", priority: "P2", routines_count: 2, connectors: ["slack","wiki","base44"], description: "Team management, onboarding, compliance", intent_tags: ["HR","team","personnel"] },
-          { domain: "Marketing", path: "playbooks/marketing", priority: "P2", routines_count: 2, connectors: ["ghl","slack","vapi","base44"], description: "Campaigns, lead nurture, content strategy", intent_tags: ["marketing","campaign","lead"] },
-        ];
-        setData(playbooks);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
+function useTabState() {
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("name-asc");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [viewMode, setViewMode] = useState<ViewMode>("grid");
+  const [selectedItem, setSelectedItem] = useState<LibraryItem | null>(null);
+  const [detailOpen, setDetailOpen] = useState(false);
+
+  const handleView = useCallback((item: LibraryItem) => {
+    setSelectedItem(item);
+    setDetailOpen(true);
   }, []);
-  return { data, loading };
+
+  return {
+    search, setSearch,
+    sortBy, setSortBy,
+    filterCategory, setFilterCategory,
+    viewMode, setViewMode,
+    selectedItem, setSelectedItem,
+    detailOpen, setDetailOpen,
+    handleView,
+  };
 }
 
-function useConnectors() {
+// ── Playbooks Tab ─────────────────────────────────────────────────────────────
+
+function PlaybooksTab() {
+  const [data, setData] = useState<PlaybookEntry[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    // Static playbook list from skills API
+    const playbooks: PlaybookEntry[] = [
+      { domain: "Billing", path: "playbooks/billing", priority: "P0", routines_count: 4, connectors: ["nmi","hyperswitch","base44","slack","ghl"], description: "Payment processing, refunds, CoF health audits", intent_tags: ["refund","charge","payment","decline"] },
+      { domain: "Customer Support", path: "playbooks/customer-support", priority: "P0", routines_count: 2, connectors: ["base44","slack","ghl","vapi","linear","nmi","hyperswitch"], description: "Customer 360, ticket triage, escalations", intent_tags: ["ticket","support","look up","customer"] },
+      { domain: "Disputes", path: "playbooks/disputes", priority: "P0", routines_count: 2, connectors: ["forth","base44","slack"], description: "Credit disputes, FCRA letters, evidence submission", intent_tags: ["dispute","credit report","fcra","bureau"] },
+      { domain: "Agent Orchestration", path: "playbooks/agent-orchestration", priority: "P1", routines_count: 3, connectors: ["base44","github","vercel","slack"], description: "Agent routing, dispatch, multi-agent coordination", intent_tags: ["orchestrate","dispatch","handoff"] },
+      { domain: "Deploy (Vercel+GitHub)", path: "playbooks/deploy-vercel-github", priority: "P1", routines_count: 2, connectors: ["github","vercel","slack"], description: "Vercel deployments, GitHub PR workflows", intent_tags: ["ship","deploy","merge","release"] },
+      { domain: "Engineering", path: "playbooks/engineering", priority: "P1", routines_count: 3, connectors: ["github","vercel","wiki"], description: "Code review, refactoring, PRDs, architecture", intent_tags: ["code review","architecture","PRD"] },
+      { domain: "Reporting", path: "playbooks/reporting", priority: "P1", routines_count: 3, connectors: ["base44","slack","wiki"], description: "Operational dashboards, morning pulse", intent_tags: ["reporting","dashboard","analytics"] },
+      { domain: "Vercel Discipline", path: "playbooks/vercel-discipline", priority: "P1", routines_count: 3, connectors: ["vercel","github"], description: "Vercel deployment standards, security patterns", intent_tags: ["vercel","deploy","env","build"] },
+      { domain: "VPS Ops", path: "playbooks/vps-ops", priority: "P1", routines_count: 3, connectors: ["base44","slack"], description: "VPS management, pm2, nginx, Cloudflare", intent_tags: ["VPS","pm2","server","health"] },
+      { domain: "HR", path: "playbooks/HR", priority: "P2", routines_count: 2, connectors: ["slack","wiki","base44"], description: "Team management, onboarding, compliance", intent_tags: ["HR","team","personnel"] },
+      { domain: "Marketing", path: "playbooks/marketing", priority: "P2", routines_count: 2, connectors: ["ghl","slack","vapi","base44"], description: "Campaigns, lead nurture, content strategy", intent_tags: ["marketing","campaign","lead"] },
+    ];
+    setData(playbooks);
+    setLoading(false);
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const items: LibraryItem[] = useMemo(() => data.map((pb) => ({
+    id: pb.path,
+    name: pb.domain,
+    type: "playbook" as const,
+    description: pb.description,
+    path: pb.path,
+    actionCount: pb.routines_count,
+    domain: pb.priority,
+    updatedAt: undefined,
+  })), [data]);
+
+  const filtered = useMemo(() => {
+    let list = items;
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) =>
+        i.name.toLowerCase().includes(q) ||
+        (i.description ?? "").toLowerCase().includes(q)
+      );
+    }
+    if (tab.sortBy === "name-asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (tab.sortBy === "name-desc") list.sort((a, b) => b.name.localeCompare(a.name));
+    return list;
+  }, [items, tab.search, tab.sortBy]);
+
+  return (
+    <div className="space-y-4">
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
+    </div>
+  );
+}
+
+// ── Connectors Tab ────────────────────────────────────────────────────────────
+
+function ConnectorsTab() {
   const [data, setData] = useState<ConnectorEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetch("/api/skills")
       .then((r) => r.json())
       .then((json) => {
         setData(json.connectors || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
-  return { data, loading };
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const items: LibraryItem[] = useMemo(() => data.map((c) => ({
+    id: c.name,
+    name: c.name.replace("-connector", ""),
+    type: "connector" as const,
+    description: c.description || `${c.tools} tools for ${c.primary_domain}`,
+    path: c.path,
+    actionCount: c.tools,
+    domain: c.primary_domain,
+    updatedAt: undefined,
+  })), [data]);
+
+  const filtered = useMemo(() => {
+    let list = items;
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) =>
+        i.name.toLowerCase().includes(q) ||
+        (i.description ?? "").toLowerCase().includes(q) ||
+        (i.domain ?? "").toLowerCase().includes(q)
+      );
+    }
+    if (tab.sortBy === "name-asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (tab.sortBy === "name-desc") list.sort((a, b) => b.name.localeCompare(a.name));
+    return list;
+  }, [items, tab.search, tab.sortBy]);
+
+  return (
+    <div className="space-y-4">
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
+    </div>
+  );
 }
 
-function useSkills() {
+// ── Skills Tab ────────────────────────────────────────────────────────────────
+
+function SkillsTab() {
   const [data, setData] = useState<SkillEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetch("/api/skills")
       .then((r) => r.json())
       .then((json) => {
@@ -127,462 +310,430 @@ function useSkills() {
         setData(all);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
-  return { data, loading };
+
+  useEffect(() => { fetchData(); }, [fetchData]);
+
+  const items: LibraryItem[] = useMemo(() => data.map((s) => ({
+    id: s.name + s.kind,
+    name: s.name,
+    type: (s.kind === "connector" ? "connector" : s.kind === "function" ? "function" : "skill") as LibraryItem["type"],
+    description: `Domain: ${s.primary_domain}`,
+    path: s.path,
+    domain: s.primary_domain,
+    updatedAt: undefined,
+  })), [data]);
+
+  const filtered = useMemo(() => {
+    let list = items;
+    if (tab.filterCategory !== "all") {
+      list = list.filter((i) => i.type === tab.filterCategory);
+    }
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) =>
+        i.name.toLowerCase().includes(q) ||
+        (i.description ?? "").toLowerCase().includes(q)
+      );
+    }
+    if (tab.sortBy === "name-asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (tab.sortBy === "name-desc") list.sort((a, b) => b.name.localeCompare(a.name));
+    return list;
+  }, [items, tab.search, tab.sortBy, tab.filterCategory]);
+
+  return (
+    <div className="space-y-4">
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
+    </div>
+  );
 }
 
-function useFunctions() {
+// ── Functions Tab ─────────────────────────────────────────────────────────────
+
+function FunctionsTab() {
   const [data, setData] = useState<FunctionEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  useEffect(() => {
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
     fetch("/api/function-registry?limit=200")
       .then((r) => r.json())
       .then((json) => {
         setData(json.functions || []);
         setLoading(false);
       })
-      .catch(() => setLoading(false));
+      .catch((e) => { setError(e.message); setLoading(false); });
   }, []);
-  return { data, loading };
-}
 
-// ── Priority Badge ──────────────────────────────────────────────────────────
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-function PriorityBadge({ priority }: { priority: string }) {
-  const colors: Record<string, string> = {
-    P0: "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200",
-    P1: "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200",
-    P2: "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200",
-  };
-  return (
-    <Badge variant="outline" className={colors[priority] || ""}>
-      {priority}
-    </Badge>
-  );
-}
-
-// ── Tab Components ──────────────────────────────────────────────────────────
-
-function PlaybooksTab() {
-  const { data, loading } = usePlaybooks();
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<keyof PlaybookEntry>("priority");
+  const items: LibraryItem[] = useMemo(() => data.map((f) => ({
+    id: f.function_name,
+    name: f.function_name,
+    type: "function" as const,
+    description: `Category: ${f.category} · Connector: ${f.parent_connector.replace("connectors/", "")}`,
+    path: f.parent_connector,
+    domain: f.category,
+    actionCount: f.associated_playbooks?.length ?? 0,
+  })), [data]);
 
   const filtered = useMemo(() => {
-    let list = [...data];
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (p) =>
-          p.domain.toLowerCase().includes(q) ||
-          p.description.toLowerCase().includes(q) ||
-          p.intent_tags.some((t) => t.toLowerCase().includes(q))
-      );
+    let list = items;
+    if (tab.filterCategory !== "all") {
+      list = list.filter((i) => i.domain === tab.filterCategory);
     }
-    const sortOrder = ["P0", "P1", "P2"];
-    list.sort((a, b) => {
-      if (sortKey === "priority") return sortOrder.indexOf(a.priority) - sortOrder.indexOf(b.priority);
-      if (sortKey === "routines_count") return b.routines_count - a.routines_count;
-      return a.domain.localeCompare(b.domain);
-    });
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q));
+    }
+    if (tab.sortBy === "name-asc") list.sort((a, b) => a.name.localeCompare(b.name));
+    else if (tab.sortBy === "name-desc") list.sort((a, b) => b.name.localeCompare(a.name));
+    else if (tab.sortBy === "updated-desc") list.sort((a, b) => b.name.localeCompare(a.name));
     return list;
-  }, [data, search, sortKey]);
+  }, [items, tab.search, tab.sortBy, tab.filterCategory]);
 
-  if (loading) return <div className="p-8 text-muted-foreground">Loading playbooks...</div>;
+  // Get unique categories for filter
+  const categories = useMemo(() => Array.from(new Set(data.map((f) => f.category))), [data]);
 
   return (
     <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Input
-          placeholder="Filter playbooks by name, description, or intent..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
         />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((pb) => (
-          <Link key={pb.domain} href={`/library/${pb.path}`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full min-h-[44px]">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <BookOpen className="h-4 w-4" />
-                    {pb.domain}
-                  </CardTitle>
-                  <PriorityBadge priority={pb.priority} />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">{pb.description}</p>
-                <div className="flex flex-wrap gap-1">
-                  <Badge variant="secondary" className="text-xs">
-                    {pb.routines_count} routines
-                  </Badge>
-                  {pb.connectors.slice(0, 3).map((c) => (
-                    <Badge key={c} variant="outline" className="text-xs">
-                      {c}
-                    </Badge>
-                  ))}
-                  {pb.connectors.length > 3 && (
-                    <Badge variant="outline" className="text-xs">
-                      +{pb.connectors.length - 3}
-                    </Badge>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-      {filtered.length === 0 && (
-        <p className="text-muted-foreground p-4">No playbooks match your filter.</p>
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
       )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
     </div>
   );
 }
 
-function ConnectorsTab() {
-  const { data, loading } = useConnectors();
-  const [search, setSearch] = useState("");
+// ── PRDs Tab ──────────────────────────────────────────────────────────────────
 
-  const filtered = useMemo(() => {
-    if (!search) return data;
-    const q = search.toLowerCase();
-    return data.filter(
-      (c) =>
-        c.name.toLowerCase().includes(q) ||
-        c.primary_domain.toLowerCase().includes(q) ||
-        c.description?.toLowerCase().includes(q)
-    );
-  }, [data, search]);
+function PRDsTab() {
+  const [data, setData] = useState<LibraryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
 
-  if (loading) return <div className="p-8 text-muted-foreground">Loading connectors...</div>;
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    fetch("/api/prds")
+      .then((r) => r.json())
+      .then((json) => {
+        setData((json.prds || []).map((p: { name: string; description: string; category: string }) => ({
+          id: p.name,
+          name: p.name.replace(".md", ""),
+          type: "prd" as const,
+          description: p.description,
+          domain: p.category,
+        })));
+        setLoading(false);
+      })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, []);
 
-  return (
-    <div className="space-y-4">
-      <div className="flex items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Input
-          placeholder="Filter connectors by name, domain, or description..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
-        />
-      </div>
-      <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((c) => (
-          <Link key={c.name} href={`/library/connectors/${c.name.replace("-connector", "")}`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full min-h-[44px]">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    <Plug className="h-4 w-4" />
-                    {c.name.replace("-connector", "")}
-                  </CardTitle>
-                  <div className="flex gap-1">
-                    {c.mcp && <Badge className="text-xs bg-purple-100 text-purple-800">MCP</Badge>}
-                    {c.custom_client && (
-                      <Badge className="text-xs bg-emerald-100 text-emerald-800">Client</Badge>
-                    )}
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">
-                  {c.description || `${c.tools} tools for ${c.primary_domain}`}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  <Badge variant="secondary" className="text-xs">
-                    {c.tools} tools
-                  </Badge>
-                  <Badge variant="outline" className="text-xs">
-                    v{c.version}
-                  </Badge>
-                  {c.also_in?.slice(0, 2).map((d: string) => (
-                    <Badge key={d} variant="outline" className="text-xs">
-                      {d}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function SkillsTab() {
-  const { data, loading } = useSkills();
-  const [search, setSearch] = useState("");
-  const [kindFilter, setKindFilter] = useState<string>("all");
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtered = useMemo(() => {
     let list = data;
-    if (kindFilter !== "all") list = list.filter((s) => s.kind === kindFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter(
-        (s) =>
-          s.name.toLowerCase().includes(q) ||
-          s.primary_domain.toLowerCase().includes(q) ||
-          s.path.toLowerCase().includes(q)
-      );
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q));
     }
     return list;
-  }, [data, search, kindFilter]);
-
-  const kindIcons: Record<string, React.ReactNode> = {
-    connector: <Plug className="h-4 w-4" />,
-    function: <Zap className="h-4 w-4" />,
-    capability: <Sparkles className="h-4 w-4" />,
-  };
-
-  if (loading) return <div className="p-8 text-muted-foreground">Loading skills...</div>;
+  }, [data, tab.search]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Input
-          placeholder="Filter skills by name, domain, or path..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
         />
-        <div className="flex gap-1 ml-auto">
-          {["all", "connector", "function", "capability"].map((k) => (
-            <Badge
-              key={k}
-              variant={kindFilter === k ? "default" : "outline"}
-              className="cursor-pointer capitalize"
-              onClick={() => setKindFilter(k)}
-            >
-              {k}
-            </Badge>
-          ))}
-        </div>
-      </div>
-      <div className="grid gap-3 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((s) => (
-          <Link key={s.name + s.kind} href={`/library/${s.path}`}>
-            <Card className="hover:border-primary transition-colors cursor-pointer h-full min-h-[44px]">
-              <CardHeader className="pb-2">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base flex items-center gap-2">
-                    {kindIcons[s.kind] || <Sparkles className="h-4 w-4" />}
-                    {s.name}
-                  </CardTitle>
-                  <Badge variant="outline" className="text-xs capitalize">
-                    {s.kind}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Domain: {s.primary_domain}
-                </p>
-                <div className="flex flex-wrap gap-1">
-                  <Badge variant="secondary" className="text-xs">
-                    v{s.version}
-                  </Badge>
-                  {s.also_in?.slice(0, 2).map((d: string) => (
-                    <Badge key={d} variant="outline" className="text-xs">
-                      {d}
-                    </Badge>
-                  ))}
-                  {s.dependencies?.slice(0, 2).map((d: string) => (
-                    <Badge key={d} variant="outline" className="text-xs">
-                      dep: {d.replace("-connector", "")}
-                    </Badge>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          </Link>
-        ))}
-      </div>
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
     </div>
   );
 }
 
-function FunctionsTab() {
-  const { data, loading } = useFunctions();
-  const [search, setSearch] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+// ── Wiki Tab ──────────────────────────────────────────────────────────────────
+
+function WikiTab() {
+  const [data, setData] = useState<LibraryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const tab = useTabState();
+
+  const fetchData = useCallback(() => {
+    setLoading(true);
+    setError(null);
+    fetch("/api/wiki")
+      .then((r) => r.json())
+      .then((json) => {
+        const items: LibraryItem[] = [];
+        if (json.tree) {
+          for (const [category, pages] of Object.entries(json.tree)) {
+            if (Array.isArray(pages)) {
+              for (const page of pages as Array<{ name: string; path: string }>) {
+                items.push({
+                  id: page.path,
+                  name: page.name.replace(".md", ""),
+                  type: "wiki" as const,
+                  description: `Category: ${category}`,
+                  path: page.path,
+                  domain: category,
+                });
+              }
+            }
+          }
+        }
+        setData(items);
+        setLoading(false);
+      })
+      .catch((e) => { setError(e.message); setLoading(false); });
+  }, []);
+
+  useEffect(() => { fetchData(); }, [fetchData]);
 
   const filtered = useMemo(() => {
     let list = data;
-    if (categoryFilter !== "all") list = list.filter((f) => f.category === categoryFilter);
-    if (search) {
-      const q = search.toLowerCase();
-      list = list.filter((f) => f.function_name.toLowerCase().includes(q));
+    if (tab.search) {
+      const q = tab.search.toLowerCase();
+      list = list.filter((i) => i.name.toLowerCase().includes(q));
     }
     return list;
-  }, [data, search, categoryFilter]);
-
-  const categories = useMemo(() => {
-    const cats = new Set(data.map((f) => f.category));
-    return Array.from(cats);
-  }, [data]);
-
-  if (loading) return <div className="p-8 text-muted-foreground">Loading functions...</div>;
+  }, [data, tab.search]);
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-2">
-        <Search className="h-4 w-4 text-muted-foreground shrink-0" />
-        <Input
-          placeholder="Search 199+ functions by name..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="max-w-md"
+      <LibraryToolbar
+        filterCategory={tab.filterCategory}
+        onFilterChange={tab.setFilterCategory}
+        onSearchChange={tab.setSearch}
+        onSortChange={tab.setSortBy}
+        onViewModeChange={tab.setViewMode}
+        searchQuery={tab.search}
+        sortBy={tab.sortBy}
+        totalCount={filtered.length}
+        viewMode={tab.viewMode}
+      />
+      {tab.viewMode === "grid" ? (
+        <LibraryGrid
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
         />
-        <div className="flex gap-1 flex-wrap">
-          <Badge
-            variant={categoryFilter === "all" ? "default" : "outline"}
-            className="cursor-pointer"
-            onClick={() => setCategoryFilter("all")}
-          >
-            all
-          </Badge>
-          {categories.map((cat) => (
-            <Badge
-              key={cat}
-              variant={categoryFilter === cat ? "default" : "outline"}
-              className="cursor-pointer"
-              onClick={() => setCategoryFilter(cat)}
-            >
-              {cat}
-            </Badge>
-          ))}
-        </div>
-      </div>
-      <div className="border rounded-lg overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="bg-muted">
-                <th className="text-left px-3 py-2 font-medium">Function</th>
-                <th className="text-left px-3 py-2 font-medium hidden sm:table-cell">Category</th>
-                <th className="text-left px-3 py-2 font-medium hidden md:table-cell">Connector</th>
-                <th className="text-left px-3 py-2 font-medium hidden lg:table-cell">Playbooks</th>
-                <th className="text-right px-3 py-2 font-medium w-12">Trace</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.slice(0, 100).map((f) => (
-                <tr key={f.function_name} className="border-t hover:bg-muted/50 min-h-[44px]">
-                  <td className="px-3 py-2 font-mono text-xs">{f.function_name}</td>
-                  <td className="px-3 py-2 hidden sm:table-cell">
-                    <Badge variant="outline" className="text-xs">{f.category}</Badge>
-                  </td>
-                  <td className="px-3 py-2 text-muted-foreground text-xs hidden md:table-cell">
-                    {f.parent_connector.replace("connectors/", "")}
-                  </td>
-                  <td className="px-3 py-2 hidden lg:table-cell">
-                    <div className="flex flex-wrap gap-1">
-                      {f.associated_playbooks?.slice(0, 2).map((pb: string) => (
-                        <Badge key={pb} variant="secondary" className="text-xs">
-                          {pb.replace("playbooks/", "")}
-                        </Badge>
-                      ))}
-                      {(f.associated_playbooks?.length || 0) > 2 && (
-                        <span className="text-xs text-muted-foreground">
-                          +{f.associated_playbooks.length - 2}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="px-3 py-2 text-right">
-                    <Link
-                      href={`/library/functions/${f.function_name}`}
-                      className="inline-flex items-center text-primary hover:underline"
-                    >
-                      <ExternalLink className="h-3 w-3" />
-                    </Link>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length > 100 && (
-          <div className="px-3 py-2 text-xs text-muted-foreground bg-muted/30 border-t">
-            Showing first 100 of {filtered.length} functions. Use search to narrow down.
-          </div>
-        )}
-        {filtered.length === 0 && (
-          <div className="px-3 py-4 text-muted-foreground text-center">
-            No functions match your filter.
-          </div>
-        )}
-      </div>
+      ) : (
+        <LibraryTable
+          error={error}
+          items={filtered}
+          loading={loading}
+          onRetry={fetchData}
+          onView={tab.handleView}
+        />
+      )}
+      <DetailDrawer
+        item={tab.selectedItem}
+        onOpenChange={tab.setDetailOpen}
+        open={tab.detailOpen}
+      />
     </div>
   );
 }
 
-// ── Main Library Page ───────────────────────────────────────────────────────
+// ── Main Library Page ─────────────────────────────────────────────────────────
 
 export default function LibraryPage() {
+  const [tabCounts, setTabCounts] = useState<Record<string, number>>({});
+
+  useEffect(() => {
+    // Fetch live counts
+    Promise.allSettled([
+      fetch("/api/skills").then((r) => r.json()),
+      fetch("/api/function-registry?limit=1").then((r) => r.json()),
+      fetch("/api/prds").then((r) => r.json()),
+      fetch("/api/wiki").then((r) => r.json()),
+    ]).then(([skillsRes, funcRes, prdsRes, wikiRes]) => {
+      const counts: Record<string, number> = {};
+      if (skillsRes.status === "fulfilled") {
+        counts.skills = skillsRes.value.summary?.totalSkills ?? 0;
+        counts.connectors = skillsRes.value.connectors?.length ?? 0;
+      }
+      if (funcRes.status === "fulfilled") {
+        counts.functions = funcRes.value.summary?.total_functions ?? funcRes.value.pagination?.total ?? 0;
+      }
+      if (prdsRes.status === "fulfilled") {
+        counts.prds = prdsRes.value.count ?? 0;
+      }
+      if (wikiRes.status === "fulfilled") {
+        const tree = wikiRes.value.tree ?? {};
+        counts.wiki = Object.values(tree).reduce((sum: number, pages: unknown) => {
+          return sum + (Array.isArray(pages) ? pages.length : 0);
+        }, 0);
+      }
+      setTabCounts(counts);
+    }).catch(() => {});
+  }, []);
+
+  const tabs = [
+    { value: "playbooks", label: "Playbooks", icon: FolderGit2Icon, count: 11 },
+    { value: "connectors", label: "Connectors", icon: PlugIcon, count: tabCounts.connectors ?? 14 },
+    { value: "skills", label: "Skills", icon: TargetIcon, count: tabCounts.skills ?? 28 },
+    { value: "functions", label: "Functions", icon: FunctionSquareIcon, count: tabCounts.functions ?? 199 },
+    { value: "prds", label: "PRDs", icon: BookOpenIcon, count: tabCounts.prds ?? 4 },
+    { value: "wiki", label: "Wiki", icon: FileTextIcon, count: tabCounts.wiki ?? 12 },
+  ];
+
   return (
     <div className="container mx-auto px-4 py-6 max-w-7xl">
+      {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">Library</h1>
-        <p className="text-muted-foreground mt-1">
-          4-Dimensional Relational Graph — Playbooks · Connectors · Skills · Functions
+        <p className="text-sm text-muted-foreground mt-1">
+          Knowledge files — Playbooks · Connectors · Skills · Functions · PRDs · Wiki
         </p>
       </div>
 
-      <Tabs defaultValue="playbooks" className="w-full">
-        <TabsList className="mb-6 flex-wrap h-auto gap-1">
-          <TabsTrigger value="playbooks" className="min-h-[44px]">
-            <BookOpen className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Playbooks</span>
-            <Badge variant="secondary" className="ml-2 text-xs">11</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="connectors" className="min-h-[44px]">
-            <Plug className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Connectors</span>
-            <Badge variant="secondary" className="ml-2 text-xs">14</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="skills" className="min-h-[44px]">
-            <Sparkles className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Skills</span>
-            <Badge variant="secondary" className="ml-2 text-xs">28</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="functions" className="min-h-[44px]">
-            <Zap className="h-4 w-4 mr-2" />
-            <span className="hidden sm:inline">Functions</span>
-            <Badge variant="secondary" className="ml-2 text-xs">199</Badge>
-          </TabsTrigger>
-          <TabsTrigger value="secrets" className="min-h-[44px]" asChild>
+      <Tabs className="w-full" defaultValue="playbooks">
+        <TabsList className="mb-6 h-auto flex-wrap gap-1 bg-transparent p-0">
+          {tabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <TabsTrigger
+                className="min-h-[44px] data-[state=active]:bg-muted data-[state=active]:shadow-sm rounded-lg"
+                key={tab.value}
+                value={tab.value}
+              >
+                <Icon className="h-4 w-4 mr-2" />
+                <span className="hidden sm:inline">{tab.label}</span>
+                <Badge className="ml-2 h-5 px-1.5 text-[10px] tabular-nums" variant="secondary">
+                  {tab.count}
+                </Badge>
+              </TabsTrigger>
+            );
+          })}
+          <TabsTrigger
+            asChild
+            className="min-h-[44px] data-[state=active]:bg-muted data-[state=active]:shadow-sm rounded-lg"
+            value="secrets"
+          >
             <Link href="/library/secrets">
-              <Shield className="h-4 w-4 mr-2" />
+              <ShieldIcon className="h-4 w-4 mr-2" />
               <span className="hidden sm:inline">Secrets</span>
-              <Badge variant="secondary" className="ml-2 text-xs">🔒</Badge>
+              <Badge className="ml-2 h-5 px-1.5 text-[10px]" variant="secondary">
+                🔒
+              </Badge>
             </Link>
           </TabsTrigger>
         </TabsList>
 
-        <TabsContent value="playbooks">
-          <PlaybooksTab />
-        </TabsContent>
-
-        <TabsContent value="connectors">
-          <ConnectorsTab />
-        </TabsContent>
-
-        <TabsContent value="skills">
-          <SkillsTab />
-        </TabsContent>
-
-        <TabsContent value="functions">
-          <FunctionsTab />
+        <TabsContent value="playbooks"><PlaybooksTab /></TabsContent>
+        <TabsContent value="connectors"><ConnectorsTab /></TabsContent>
+        <TabsContent value="skills"><SkillsTab /></TabsContent>
+        <TabsContent value="functions"><FunctionsTab /></TabsContent>
+        <TabsContent value="prds"><PRDsTab /></TabsContent>
+        <TabsContent value="wiki"><WikiTab /></TabsContent>
+        <TabsContent value="secrets">
+          <div className="flex items-center justify-center py-16">
+            <EmptyState
+              actionLabel="View Secrets"
+              description="Manage API keys, tokens, and environment secrets."
+              title="Secrets Management"
+              variant="empty"
+            />
+          </div>
         </TabsContent>
       </Tabs>
     </div>

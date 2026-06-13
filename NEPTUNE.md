@@ -45,8 +45,11 @@ After matching the playbook via the router, use:
 - Repo: github.com/abhiswami2121/neptune-chat · Deploy: https://neptune-chat-ashy.vercel.app
 - Vercel: prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl · Stack: Next.js 16, AI SDK 6, shadcn/ui
 - V2: https://neptune-v2.vercel.app (complex coding handoffs)
-- File system: playbooks/ (router + domain playbooks), connectors/ (13 connector manifestos)
+- File system: playbooks/ (router + 12 domain playbooks), connectors/ (13 connector manifestos)
+- Primary user domain: planning-research (P0) — PRDs, TRDs, research, implementation planning, plan mode
 - U3 Sprint: ALL PHASES LANDED (PB-A through Phase 10) — Playbook-First Orchestration complete
+- U5: PLANNING & RESEARCH DOMAIN — primary user-facing domain. 15 routines, 11 skills, 7 workflows, plan-mode primitive, parallel research engine
+- PRD: jarvis/prd/U5-PLANNING-RESEARCH-DOMAIN-MASTER-PRD-2026-06-13.md
 - Telemetry: /telemetry dashboard · Diagnostics: /diagnostics dashboard · Annotations: /api/annotations
 - Neptune Connector: 200 actions across 8 skill packs (github, ghl, linear, vercel, forth, wiki, mcp-hub, affy)
 - Annotation loop: auto-records after every execution via proxy/connector

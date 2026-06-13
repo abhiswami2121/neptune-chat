@@ -4,11 +4,12 @@
  */
 import type { NextRequest } from "next/server";
 import { sandboxManager } from "@/lib/sandbox/manager";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function GET(
+export const GET = requireAllowlist(async (
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
-) {
+) => {
   const { id } = await params;
   const run = sandboxManager.getRun(id);
 
@@ -79,4 +80,4 @@ export async function GET(
       "X-Accel-Buffering": "no",
     },
   });
-}
+});

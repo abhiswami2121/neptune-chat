@@ -20,7 +20,7 @@ Do NOT search for tools, skills, or functions by grepping the filesystem. The pl
 
 ---
 
-## INTENT → PLAYBOOK MAP (80+ Routes)
+## INTENT → PLAYBOOK MAP (98+ Routes)
 
 ### P0: BILLING & PAYMENTS (Money Movement)
 
@@ -61,6 +61,27 @@ Do NOT search for tools, skills, or functions by grepping the filesystem. The pl
 | 23 | Round 2 dispute | round 2, second dispute, escalated, reinvestigation | `playbooks/disputes/playbook-disputes.md` | Supervisor review required |
 | 24 | Credit report review | credit report, pull report, check credit, score, negative items | `playbooks/disputes/playbook-disputes.md` | NegativeItem identification |
 | 25 | FCRA compliance check | fcra, compliance, statutory, deadline, violation | `playbooks/disputes/playbook-disputes.md` | 30/45-day statutory windows |
+
+### P0: PLANNING & RESEARCH (Primary User Domain)
+
+| # | User Intent | Trigger Keywords | Playbook | Why |
+|---|------------|-----------------|----------|-----|
+| 26 | Write a PRD | write prd, create prd, product requirement, spec out, document requirements, prd for, feature spec, requirement doc | `playbooks/planning-research/playbook-planning-research.md` | 12-section PRD template + research |
+| 27 | Draft a TRD | draft trd, write trd, technical design, architecture doc, design document, system design, technical spec, tech spec | `playbooks/planning-research/playbook-planning-research.md` | C4 diagrams + OpenAPI contracts |
+| 28 | Create implementation plan | implementation plan, impl plan, build plan, execution plan, sprint plan, phase plan, roadmap, project plan | `playbooks/planning-research/playbook-planning-research.md` | Phases + budgets + dependency graph |
+| 29 | Deep research | research, investigate, explore, compare, state of, deep dive, learn about, background on, survey | `playbooks/planning-research/playbook-planning-research.md` | 5-source parallel research engine |
+| 30 | Gap analysis | gap analysis, gap, what is missing, audit, compare current vs target, delta, discrepancy | `playbooks/planning-research/playbook-planning-research.md` | 8-dimension systematic diff |
+| 31 | Plan mode (multi-phase gate) | plan mode, approve plan, review plan, multi-phase, complex task, large plan | `playbooks/planning-research/playbook-planning-research.md` | Auto-detect >=3 phases, approval gate |
+| 32 | Mission dispatch | dispatch mission, create mission, start mission, launch task, mission, deploy mission | `playbooks/planning-research/playbook-planning-research.md` | YAML mission + hybridDispatch |
+| 33 | Architecture diagram | diagram, architecture diagram, flowchart, sequence diagram, mermaid, visualize, draw, illustrate | `playbooks/planning-research/playbook-planning-research.md` | 8 Mermaid diagram types |
+| 34 | Extract cardinal rules | cardinal rules, locked rules, constraints, rules to follow, what rules apply, governing rules | `playbooks/planning-research/playbook-planning-research.md` | Pull from memory + cortex |
+| 35 | Synthesize sources | synthesize, combine, merge, consolidate, summary of, bring together, unify | `playbooks/planning-research/playbook-planning-research.md` | Weighted merge: confidence + recency + relevance |
+| 36 | Design workflow | design workflow, create workflow, new workflow, workflow for, build workflow, define workflow | `playbooks/planning-research/playbook-planning-research.md` | YAML scaffolding tool |
+| 37 | Save to cortex | save this, persist, store, archive, keep this, remember this, save for later | `playbooks/planning-research/playbook-planning-research.md` | Canonical artifact persistence |
+| 38 | Plan review | review plan, check plan, validate plan, plan quality, is this plan good, plan audit | `playbooks/planning-research/playbook-planning-research.md` | Completeness + consistency + feasibility |
+| 39 | Full planning pipeline | full plan, end to end plan, complete plan, plan everything, master plan, comprehensive plan | `playbooks/planning-research/playbook-planning-research.md` | PRD → TRD → impl-plan → approve → dispatch |
+| 40 | Quick planning scan | quick scan, fast plan, brief overview, plan summary, quick assessment, tl;dr plan | `playbooks/planning-research/playbook-planning-research.md` | Condensed fast-path planning |
+| 41 | Research execution | run research, search for, find information, look up research, query research | `playbooks/planning-research/playbook-planning-research.md` | POST /api/research/execute |
 
 ### P1: DEPLOY & SHIP (Vercel + GitHub)
 
@@ -196,6 +217,7 @@ Do NOT search for tools, skills, or functions by grepping the filesystem. The pl
 
 ```
 Playbooks (Domain SOPs):
+  playbooks/planning-research/playbook-planning-research.md   — Planning & Research (PRIMARY USER DOMAIN)
   playbooks/billing/playbook-billing.md                     — Billing & Payments
   playbooks/customer-support/playbook-customer-support.md   — Support Triage
   playbooks/disputes/playbook-disputes.md                   — Credit Disputes

@@ -1,0 +1,176 @@
+# Plan Mode Propose Workflow
+# Purpose: Auto-detect multi-phase tasks → render approval Card → gate execution
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: Auto-detected (tasks with >= 3 phases) or "plan mode", "approve plan", "review plan"
+
+name: plan-mode-propose
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - plan mode
+  - approve plan
+  - review plan
+  - multi-phase
+  - complex task
+  - large plan
+
+configuration:
+  auto_detect: true
+  phase_threshold: 3
+  approval_required: true
+  timeout_minutes: 30
+
+phases:
+  - id: detect_and_assess
+    name: Detect Multi-Phase Task
+    steps:
+      - id: count_phases
+        action: detect_phase_count
+        input:
+          task: "{user_task}"
+          plan: "{plan_document}"
+        description: Count phases in the task or plan
+      - id: check_threshold
+        action: evaluate_threshold
+        input:
+          phase_count: "{count}"
+          threshold: 3
+        description: Determine if plan mode is required
+      - id: extract_metadata
+        action: extract_plan_metadata
+        input:
+          plan: "{plan_document}"
+        description: Extract goal, phases, budget, success criteria
+
+  - id: build_proposal
+    name: Build Plan Proposal
+    depends_on:
+      - detect_and_assess
+    condition: "{phase_count >= 3}"
+    steps:
+      - id: generate_summary
+        action: generate_plan_summary
+        input:
+          goal: "{plan_goal}"
+          phases: "{phases}"
+          budget: "{phase_budgets}"
+          criteria: "{success_criteria}"
+        description: Generate concise plan summary for user review
+      - id: validate_cardinals
+        action: check_cardinal_compliance
+        input:
+          plan: "{plan_document}"
+          rules: "{extracted_cardinals}"
+        description: Validate plan doesn't violate any LOCKED rules
+      - id: prepare_proposal
+        action: prepare_proposal_payload
+        input:
+          summary: "{summary}"
+          cardinal_check: "{cardinal_result}"
+          deps: "{dependency_graph}"
+        description: Prepare structured proposal for UI rendering
+
+  - id: render_and_wait
+    name: Render Proposal and Await Decision
+    depends_on:
+      - build_proposal
+    steps:
+      - id: render_card
+        action: render_plan_mode_proposal
+        input:
+          proposal: "{prepared_proposal}"
+        description: Render shadcn Card with 3 buttons in chat
+      - id: await_decision
+        action: wait_for_user
+        input:
+          proposal_id: "{proposal_id}"
+          timeout_seconds: 1800
+        description: BLOCK execution until user approves, modifies, or cancels
+
+  - id: handle_decision
+    name: Handle User Decision
+    depends_on:
+      - render_and_wait
+    steps:
+      - id: route_decision
+        action: route_user_decision
+        input:
+          decision: "{user_choice}"
+          proposal_id: "{proposal_id}"
+        description: Route to approve, modify, or cancel path
+      - id: approve_path
+        action: execute_approved_plan
+        input:
+          phases: "{approved_phases}"
+        description: Execute phases in order, respecting dependencies
+        condition: "{decision == 'approve'}"
+      - id: modify_path
+        action: apply_modifications
+        input:
+          proposal_id: "{proposal_id}"
+          modifications: "{user_modifications}"
+        description: Apply user modifications and re-propose
+        condition: "{decision == 'modify'}"
+      - id: cancel_path
+        action: cancel_execution
+        input:
+          proposal_id: "{proposal_id}"
+          reason: "{user_reason}"
+        description: Halt execution, document cancellation
+        condition: "{decision == 'cancel'}"
+
+  - id: finalize
+    name: Record Decision
+    depends_on:
+      - handle_decision
+    steps:
+      - id: save_decision
+        action: save_to_cortex
+        input:
+          content: "{decision_record}"
+          path: "jarvis/cortex/decisions/plan-{proposal_id}-{date}.json"
+          type: "general"
+        description: Persist plan mode decision for audit trail
+      - id: annotate_decision
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "plan-mode-propose"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "Plan mode: {decision}, {phase_count} phases, {total_budget}t budget"
+
+success_criteria:
+  - Multi-phase task correctly detected (phases >= 3)
+  - Proposal rendered with Goal + Phases + Budget + Success Criteria + Cardinal Rules
+  - User presented with Approve / Modify / Cancel buttons
+  - Decision respected (no execution without approval)
+  - Decision persisted for audit trail
+  - Annotation recorded
+
+ui_component:
+  component: "components/plan-mode-proposal.tsx"
+  framework: "shadcn/ui Card"
+  buttons:
+    - label: "✓ Approve"
+      variant: "default"
+      action: "approve"
+      description: "Execute the plan as proposed"
+    - label: "✎ Modify"
+      variant: "secondary"
+      action: "modify"
+      description: "Make changes and re-propose"
+    - label: "✗ Cancel"
+      variant: "destructive"
+      action: "cancel"
+      description: "Cancel execution entirely"
+  sections:
+    - goal: "1-2 sentence plan goal"
+    - phases: "Ordered list with turn budgets"
+    - budget: "Total turn budget"
+    - success_criteria: "Measurable completion conditions"
+    - cardinal_rules: "Any LOCKED rules that apply"
+    - dependency_graph: "Optional Mermaid diagram of phase deps"

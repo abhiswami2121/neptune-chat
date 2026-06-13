@@ -1,0 +1,136 @@
+# Master PRD Workflow
+# Purpose: Full PRD pipeline — research → template → review → save
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "write prd", "create prd", "spec out"
+
+name: master-prd
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - write prd
+  - create prd
+  - product requirement
+  - spec out
+  - document requirements
+  - prd for
+  - feature spec
+  - requirement doc
+
+phases:
+  - id: research_context
+    name: Research Context
+    parallel: true
+    steps:
+      - id: search_cortex
+        action: search_cortex
+        input:
+          query: "{topic}"
+          limit: 10
+        description: Search existing PRDs and cortex artifacts
+        timeout_ms: 15000
+      - id: search_wiki
+        action: wiki_search
+        input:
+          query: "{topic}"
+        description: Search wiki for related documents
+        timeout_ms: 15000
+      - id: pull_cardinals
+        action: cardinal_rules_extract
+        input:
+          domain: "{domain}"
+          source: "both"
+        description: Get LOCKED constraints from memory and cortex
+        timeout_ms: 10000
+
+  - id: domain_research
+    name: Domain Research (Optional)
+    depends_on:
+      - research_context
+    condition: "{needs_domain_research}"
+    parallel: true
+    steps:
+      - id: parallel_research
+        action: deep_research
+        input:
+          query: "{topic}"
+          sources: 5
+          per_source_timeout: 30000
+        description: Full parallel 5-source research if domain knowledge needed
+        timeout_ms: 35000
+
+  - id: draft_sections
+    name: Draft PRD Sections
+    depends_on:
+      - research_context
+      - domain_research
+    steps:
+      - id: draft_header
+        action: draft_prd_section
+        input:
+          section: "header"
+          template: "12-section-prd"
+        description: Executive Summary + Problem Statement + Scope
+      - id: draft_body
+        action: draft_prd_section
+        input:
+          section: "body"
+          template: "12-section-prd"
+        description: Requirements + Architecture + Data Model + API
+        depends_on:
+          - draft_header
+      - id: draft_appendix
+        action: draft_prd_section
+        input:
+          section: "appendix"
+          template: "12-section-prd"
+        description: Success Criteria + Risks + Timeline + Budget
+        depends_on:
+          - draft_body
+      - id: generate_diagrams
+        action: architecture_diagrammer
+        input:
+          system: "{topic}"
+          types: ["c4_context", "sequence"]
+        description: C4 context and sequence diagrams
+        parallel_with:
+          - draft_appendix
+
+  - id: review_and_save
+    name: Review and Persist
+    depends_on:
+      - draft_sections
+    steps:
+      - id: internal_review
+        action: review_document
+        input:
+          document: "{draft_prd}"
+          checks: ["completeness", "consistency", "cardinal_compliance"]
+        description: Internal quality review
+      - id: save_prd
+        action: save_to_cortex
+        input:
+          content: "{reviewed_prd}"
+          path: "jarvis/prd/{title}-{date}.md"
+          type: "prd"
+        description: Persist PRD to Jarvis file system
+      - id: annotate
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "PRD created: {word_count} words, {section_count} sections"
+
+success_criteria:
+  - PRD has all 12 sections
+  - Cardinal rules validated
+  - Diagrams generated if applicable
+  - File persisted to jarvis/prd/
+  - Annotation recorded
+
+budget:
+  estimated_turns: 150
+  max_duration_seconds: 120

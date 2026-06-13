@@ -6,13 +6,14 @@
  */
 
 import { getV2SSEStream } from "@/lib/v2/bridge";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 export const maxDuration = 120;
 
-export async function GET(
+export const GET = requireAllowlist(async (
   _request: Request,
   { params }: { params: Promise<{ sessionId: string }> }
-) {
+) => {
   const { sessionId } = await params;
 
   const v2Stream = await getV2SSEStream(sessionId);
@@ -40,4 +41,4 @@ export async function GET(
       "X-Accel-Buffering": "no",
     },
   });
-}
+});

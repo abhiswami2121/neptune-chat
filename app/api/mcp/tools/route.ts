@@ -7,8 +7,9 @@
  */
 
 import { getMCPServerInfo, getMCPToolNames } from "@/lib/mcp/client";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const [info, toolNames] = await Promise.all([
     getMCPServerInfo(),
     getMCPToolNames(),
@@ -18,4 +19,4 @@ export async function GET() {
     ...info,
     activeToolCount: toolNames.length,
   });
-}
+});

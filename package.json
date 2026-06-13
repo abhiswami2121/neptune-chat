@@ -15,7 +15,9 @@
     "db:pull": "drizzle-kit pull",
     "db:check": "drizzle-kit check",
     "db:up": "drizzle-kit up",
-    "test": "export PLAYWRIGHT=True && pnpm exec playwright test"
+    "test": "export PLAYWRIGHT=True && pnpm exec playwright test",
+    "neptune:bootstrap": "tsx scripts/bootstrap-neptune.ts",
+    "neptune:bootstrap:dry": "tsx scripts/bootstrap-neptune.ts --dry-run"
   },
   "dependencies": {
     "@ai-sdk/mcp": "^1.0.46",

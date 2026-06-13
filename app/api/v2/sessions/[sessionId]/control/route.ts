@@ -5,11 +5,12 @@
  */
 
 import { controlV2Session } from "@/lib/v2/bridge";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function POST(
+export const POST = requireAllowlist(async (
   request: Request,
   { params }: { params: Promise<{ sessionId: string }> }
-) {
+) => {
   const { sessionId } = await params;
 
   let body: { action?: string };
@@ -43,4 +44,4 @@ export async function POST(
   }
 
   return Response.json(result);
-}
+});

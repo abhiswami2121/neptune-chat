@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 // GET /api/vault — returns key names with status (never values)
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const keyInfo = [
     { key: "DEEPSEEK_API_KEY", status: "configured" },
     { key: "AI_GATEWAY_API_KEY", status: "configured" },
@@ -23,4 +24,4 @@ export async function GET() {
     keys: keyInfo,
     vaultUrl: "https://187.127.250.171:8400",
   });
-}
+});

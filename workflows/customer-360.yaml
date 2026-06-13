@@ -1,0 +1,103 @@
+# Workflow: Customer 360 Deep Dive
+# U3.6 Workflow Engine — Starter Template 3/5
+# Trigger: Manual (customer ID) → Pull profile + payments + comms → AI analysis → Slack card
+
+id: customer-360
+name: "Customer 360 Deep Dive"
+description: "Full customer analysis — profile, payments, communications, credit reports, AI summary"
+category: CRM
+source: manual
+createdAt: "2026-06-12"
+updatedAt: "2026-06-12"
+
+nodes:
+  - id: c360-trigger
+    type: trigger
+    position: { x: 250, y: 0 }
+    data:
+      label: "Manual Trigger (Customer ID)"
+      nodeType: trigger
+      triggerType: manual
+
+  - id: c360-profile
+    type: action
+    position: { x: 250, y: 130 }
+    data:
+      label: "Pull Customer 360 Profile"
+      nodeType: action
+      connectorId: base44
+      toolName: customer360
+      params:
+        action: full_profile
+
+  - id: c360-payments
+    type: parallel
+    position: { x: 250, y: 260 }
+    data:
+      label: "Fetch Payments & Comms"
+      nodeType: parallel
+
+  - id: c360-nmi
+    type: action
+    position: { x: 100, y: 390 }
+    data:
+      label: "Pull NMI Transactions"
+      nodeType: action
+      connectorId: nmi
+      toolName: queryTransactions
+      params:
+        limit: 20
+
+  - id: c360-slack
+    type: action
+    position: { x: 400, y: 390 }
+    data:
+      label: "Pull Slack Messages"
+      nodeType: action
+      connectorId: slack
+      toolName: pullMessages
+      params:
+        channel: newleaf-admin
+        limit: 30
+
+  - id: c360-ai
+    type: ai
+    position: { x: 250, y: 520 }
+    data:
+      label: "AI: Customer Summary"
+      nodeType: ai
+      prompt: "Synthesize this customer's profile, payment history, NMI transactions, and Slack communications into a comprehensive 360 summary. Include: payment health score, recent issues, communication sentiment, and recommended next actions."
+      modelId: deepseek-v4-pro
+
+  - id: c360-output
+    type: output
+    position: { x: 250, y: 650 }
+    data:
+      label: "Post to #jarvis-admin"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+edges:
+  - id: e-c360-1
+    source: c360-trigger
+    target: c360-profile
+  - id: e-c360-2
+    source: c360-profile
+    target: c360-payments
+  - id: e-c360-3
+    source: c360-payments
+    target: c360-nmi
+  - id: e-c360-4
+    source: c360-payments
+    target: c360-slack
+  - id: e-c360-5
+    source: c360-nmi
+    target: c360-ai
+  - id: e-c360-6
+    source: c360-slack
+    target: c360-ai
+  - id: e-c360-7
+    source: c360-ai
+    target: c360-output

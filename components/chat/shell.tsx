@@ -19,6 +19,7 @@ import {
 } from "@/hooks/use-artifact";
 import type { Attachment, ChatMessage } from "@/lib/types";
 import { cn } from "@/lib/utils";
+import { useV2AutoOpen } from "@/hooks/use-v2-auto-open";
 import { Artifact } from "./artifact";
 import { ChatHeader } from "./chat-header";
 import { DataStreamHandler } from "./data-stream-handler";
@@ -54,6 +55,9 @@ export function ChatShell() {
   const [attachments, setAttachments] = useState<Attachment[]>([]);
   const isArtifactVisible = useArtifactSelector((state) => state.isVisible);
   const { setArtifact } = useArtifact();
+
+  // V2 auto-open: watch messages for spawnCodingAgent results
+  useV2AutoOpen(messages);
 
   const stopRef = useRef(stop);
   stopRef.current = stop;

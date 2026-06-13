@@ -21,6 +21,7 @@ import {
 import { checkConnectorEnv } from "@/lib/connectors/registry";
 import type { WorkflowNodeType } from "@/lib/workflow/types";
 import { NODE_TYPE_META } from "@/lib/workflow/types";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 export const maxDuration = 60;
 
@@ -33,7 +34,7 @@ function generateNodeId(): string {
   return id;
 }
 
-export async function POST(req: Request) {
+export const POST = requireAllowlist(async (req: Request) => {
   // Validate internal token if configured (bypasses Vercel Deployment Protection)
   const expectedToken = process.env.NEPTUNE_INTERNAL_TOKEN;
   if (expectedToken) {
@@ -244,4 +245,4 @@ RESPOND WITH ONLY THE JSON OBJECT, NO MARKDOWN FORMATTING.`;
       { status: 500 }
     );
   }
-}
+});

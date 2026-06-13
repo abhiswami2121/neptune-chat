@@ -140,11 +140,11 @@ export interface WorkflowDefinition {
 
 // ── Execution Types ─────────────────────────────────────────────────────────
 
-export type ExecutionStatus = "idle" | "running" | "completed" | "failed";
+export type ExecutionStatus = "idle" | "running" | "paused" | "completed" | "failed" | "cancelled";
 
 export interface NodeExecution {
   nodeId: string;
-  status: "pending" | "running" | "done" | "error";
+  status: "pending" | "running" | "paused" | "done" | "error";
   startedAt?: number;
   completedAt?: number;
   error?: string;
@@ -159,4 +159,16 @@ export interface WorkflowExecution {
   completedAt?: number;
   nodes: Map<string, NodeExecution>;
   currentNodeId?: string;
+  pausedAt?: number;
+  cancelledAt?: number;
 }
+
+/** State machine: idle → running → paused/completed/failed/cancelled */
+export const VALID_TRANSITIONS: Record<ExecutionStatus, ExecutionStatus[]> = {
+  idle: ["running"],
+  running: ["paused", "completed", "failed", "cancelled"],
+  paused: ["running", "cancelled"],
+  completed: [],
+  failed: ["running"],
+  cancelled: [],
+};

@@ -1,0 +1,145 @@
+# Implementation Plan Workflow
+# Purpose: Phased implementation breakdown with dependency graph and budgets
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "implementation plan", "impl plan", "build plan", "execution plan"
+
+name: implementation-plan
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - implementation plan
+  - impl plan
+  - build plan
+  - execution plan
+  - sprint plan
+  - phase plan
+  - roadmap
+  - project plan
+
+prerequisites:
+  - PRD must exist
+  - TRD recommended but not required for simple plans
+
+phases:
+  - id: load_artifacts
+    name: Load Planning Artifacts
+    parallel: true
+    steps:
+      - id: load_prd
+        action: view_file
+        input:
+          path: "jarvis/prd/{prd_filename}"
+        description: Load PRD for scope definition
+      - id: load_trd
+        action: view_file
+        input:
+          path: "jarvis/prd/{trd_filename}"
+        description: Load TRD for technical constraints
+        optional: true
+      - id: extract_cardinals
+        action: cardinal_rules_extract
+        input:
+          domain: "{domain}"
+          source: "both"
+        description: Get LOCKED constraints
+
+  - id: phase_breakdown
+    name: Break Down Into Phases
+    depends_on:
+      - load_artifacts
+    steps:
+      - id: identify_milestones
+        action: analyze_scope
+        input:
+          prd: "{loaded_prd}"
+          trd: "{loaded_trd}"
+        description: Identify deliverable milestones
+      - id: define_phases
+        action: phase_breakdown
+        input:
+          milestones: "{milestones}"
+          constraints: "{cardinal_rules}"
+        description: Break into sequential phases
+      - id: assign_budgets
+        action: budget_allocation
+        input:
+          phases: "{phases}"
+          total_budget: "{total_turn_budget}"
+        description: Allocate turn budgets per phase
+
+  - id: dependency_mapping
+    name: Map Dependencies
+    depends_on:
+      - phase_breakdown
+    steps:
+      - id: dependency_graph
+        action: dependency_analysis
+        input:
+          phases: "{defined_phases}"
+        description: Map phase dependencies (blocked-by, enables)
+      - id: critical_path
+        action: critical_path_analysis
+        input:
+          graph: "{dependency_graph}"
+        description: Identify critical path through phases
+      - id: parallel_opportunities
+        action: find_parallel_groups
+        input:
+          graph: "{dependency_graph}"
+        description: Identify [PARALLEL] execution groups
+
+  - id: plan_mode_gate
+    name: Plan Mode Approval Gate
+    depends_on:
+      - dependency_mapping
+    condition: "{phase_count >= 3}"
+    steps:
+      - id: render_proposal
+        action: plan_mode_propose
+        input:
+          phases: "{defined_phases}"
+          budget: "{budgets}"
+          deps: "{dependency_graph}"
+          critical_path: "{critical_path}"
+        description: Render plan-mode proposal Card in chat
+      - id: await_approval
+        action: wait_for_user
+        input:
+          proposal_id: "{proposal_id}"
+        description: BLOCK until user approves, modifies, or cancels
+
+  - id: finalize
+    name: Finalize and Persist
+    depends_on:
+      - plan_mode_gate
+    steps:
+      - id: save_plan
+        action: save_to_cortex
+        input:
+          content: "{full_plan}"
+          path: "jarvis/prd/{title}-IMPL-PLAN-{date}.md"
+          type: "plan"
+        description: Persist implementation plan
+      - id: annotate
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "implementation-plan"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "Impl plan: {phase_count} phases, {total_budget}t budget, {parallel_groups} parallel groups"
+
+success_criteria:
+  - PRD/TRD loaded and aligned
+  - Phases defined with explicit turn budgets
+  - Dependency graph complete (no circular deps)
+  - Critical path identified
+  - Plan mode invoked if phases >= 3
+  - File persisted to jarvis/prd/
+
+budget:
+  estimated_turns: 200
+  max_duration_seconds: 180

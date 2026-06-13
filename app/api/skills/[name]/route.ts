@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const SHARED_SKILLS_ROOT = "/home/neptune/_shared-skills";
 const REGISTRY_PATH = join(SHARED_SKILLS_ROOT, "registry.json");
@@ -57,10 +58,10 @@ function findSkill(name: string): { entry: any; kind: string; skillPath: string 
   return null;
 }
 
-export async function GET(
+export const GET = requireAllowlist(async (
   _request: Request,
   { params }: { params: Promise<{ name: string }> }
-) {
+) => {
   const { name } = await params;
   const skill = findSkill(name);
 
@@ -101,4 +102,4 @@ export async function GET(
     documentation: body,
     raw_markdown: skillMdRaw,
   });
-}
+});

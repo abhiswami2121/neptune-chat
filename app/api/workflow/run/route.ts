@@ -17,10 +17,11 @@ import {
 } from "@/lib/connectors/playbook-loader";
 import { checkConnectorEnv } from "@/lib/connectors/registry";
 import { sandboxTools } from "@/lib/sandbox/tools";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 export const maxDuration = 300; // 5 min max for workflow
 
-export async function POST(req: Request) {
+export const POST = requireAllowlist(async (req: Request) => {
   const { task, modelId, context } = (await req.json().catch(() => ({}))) as {
     task?: string;
     modelId?: string;
@@ -120,4 +121,4 @@ Report your final result at the end.${playbookPrompt}`,
       "X-Accel-Buffering": "no",
     },
   });
-}
+});

@@ -1,0 +1,95 @@
+# Workflow: Billing Sweep (Payment Recovery)
+# U3.6 Workflow Engine — Starter Template 2/5
+# Trigger: Manual or hourly → Pull failed NMI txns → Smart retry → Slack report
+
+id: billing-sweep
+name: "Billing Sweep"
+description: "Pull failed NMI transactions, run smart retry engine, report results to Slack"
+category: Finance
+source: manual
+createdAt: "2026-06-12"
+updatedAt: "2026-06-12"
+
+nodes:
+  - id: bs-trigger
+    type: trigger
+    position: { x: 250, y: 0 }
+    data:
+      label: "Manual or Hourly Trigger"
+      nodeType: trigger
+      triggerType: manual
+
+  - id: bs-pull-txns
+    type: action
+    position: { x: 250, y: 130 }
+    data:
+      label: "Pull Failed NMI Transactions"
+      nodeType: action
+      connectorId: nmi
+      toolName: queryTransactions
+      params:
+        status: failed
+        limit: 50
+        hours: 24
+
+  - id: bs-ai-triage
+    type: ai
+    position: { x: 250, y: 260 }
+    data:
+      label: "AI: Triage Failures"
+      nodeType: ai
+      prompt: "Analyze these failed NMI transactions. Categorize by decline reason (insufficient_funds, do_not_honor, fraud, expired_card). Recommend which should be retried via Smart Retry Engine and which need manual intervention."
+      modelId: deepseek-v4-pro
+
+  - id: bs-conditional
+    type: conditional
+    position: { x: 250, y: 390 }
+    data:
+      label: "Any Retryable?"
+      nodeType: conditional
+      condition: "Has transactions with retryable decline codes (insufficient_funds, processor_error)"
+
+  - id: bs-retry
+    type: action
+    position: { x: 100, y: 520 }
+    data:
+      label: "Run Smart Retry Engine"
+      nodeType: action
+      connectorId: nmi
+      toolName: smartRetry
+      params:
+        action: retry_soft_declines
+
+  - id: bs-output
+    type: output
+    position: { x: 250, y: 520 }
+    data:
+      label: "Post Report to Slack"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+edges:
+  - id: e-bs-1
+    source: bs-trigger
+    target: bs-pull-txns
+  - id: e-bs-2
+    source: bs-pull-txns
+    target: bs-ai-triage
+  - id: e-bs-3
+    source: bs-ai-triage
+    target: bs-conditional
+  - id: e-bs-4
+    source: bs-conditional
+    target: bs-retry
+    data:
+      branch: "true"
+  - id: e-bs-5
+    source: bs-conditional
+    target: bs-output
+    data:
+      branch: "false"
+  - id: e-bs-6
+    source: bs-retry
+    target: bs-output

@@ -1,0 +1,62 @@
+# Workflow: Morning Pulse (Daily System Health)
+# U3.6 Workflow Engine — Starter Template 1/5
+# Trigger: Cron 8am weekdays → Base44 report → AI summarize → Slack post
+
+id: morning-pulse
+name: "Morning Pulse"
+description: "Daily system health check — queries Base44 reports, summarizes with AI, posts to Slack #jarvis-admin"
+category: Operations
+source: manual
+createdAt: "2026-06-12"
+updatedAt: "2026-06-12"
+
+nodes:
+  - id: mp-trigger
+    type: trigger
+    position: { x: 250, y: 0 }
+    data:
+      label: "Daily 8am Trigger"
+      nodeType: trigger
+      triggerType: cron
+      cronExpression: "0 8 * * 1-5"
+
+  - id: mp-report
+    type: action
+    position: { x: 250, y: 130 }
+    data:
+      label: "Run Morning Pulse Report"
+      nodeType: action
+      connectorId: base44
+      toolName: reportingHub
+      params:
+        action: morning_pulse
+
+  - id: mp-ai-summary
+    type: ai
+    position: { x: 250, y: 260 }
+    data:
+      label: "AI: Summarize Results"
+      nodeType: ai
+      prompt: "Summarize the morning pulse results into a 3-bullet Slack update. Highlight critical issues (late payments, failed transactions, support tickets >24h). Be concise and actionable."
+      modelId: deepseek-v4-pro
+
+  - id: mp-output
+    type: output
+    position: { x: 250, y: 390 }
+    data:
+      label: "Post to #jarvis-admin"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+edges:
+  - id: e-mp-1
+    source: mp-trigger
+    target: mp-report
+  - id: e-mp-2
+    source: mp-report
+    target: mp-ai-summary
+  - id: e-mp-3
+    source: mp-ai-summary
+    target: mp-output

@@ -4,8 +4,9 @@
  */
 import { NextResponse } from "next/server";
 import { getIntegrationSummaries } from "@/lib/connectors/catalog";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const summaries = getIntegrationSummaries();
 
   const connected = summaries.filter((s) => s.status === "connected");
@@ -30,4 +31,4 @@ export async function GET() {
     })),
     fullList: summaries.map((s) => s.name),
   });
-}
+});

@@ -27,6 +27,8 @@ import {
 import { SidebarInset } from "@/components/ui/sidebar";
 import { useSidebar } from "@/components/ui/sidebar";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { V2LivePanel } from "@/components/v2-live-panel";
+import { useV2Session } from "@/hooks/use-v2-session";
 
 interface ChatLayoutClientProps {
   user: User | undefined;
@@ -35,6 +37,7 @@ interface ChatLayoutClientProps {
 function ChatLayoutInner({ user }: ChatLayoutClientProps) {
   const [activePanel, setActivePanel] = useState<PanelId>(null);
   const { toggleSidebar } = useSidebar();
+  const { activeSession, isPanelOpen: isV2PanelOpen, closeSession } = useV2Session();
 
   // Register keyboard shortcuts
   useKeyboardShortcuts({
@@ -101,6 +104,19 @@ function ChatLayoutInner({ user }: ChatLayoutClientProps) {
           )}
         </ResizablePanelGroup>
       </SidebarInset>
+
+      {/* V2 Live Panel — right-side Sheet, auto-opens on spawn_v2 */}
+      <V2LivePanel
+        open={isV2PanelOpen}
+        onOpenChange={(open) => {
+          if (!open) closeSession();
+        }}
+        sessionId={activeSession?.sessionId ?? null}
+        goal={activeSession?.goal}
+        repo={activeSession?.repo}
+        branch={activeSession?.branch}
+        model={activeSession?.model}
+      />
     </>
   );
 }

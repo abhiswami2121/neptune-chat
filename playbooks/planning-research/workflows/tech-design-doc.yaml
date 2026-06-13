@@ -1,0 +1,128 @@
+# Technical Design Document Workflow
+# Purpose: TRD pipeline — PRD load → diagrams → API contracts → data models → save
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "draft trd", "write trd", "technical design", "architecture doc"
+
+name: tech-design-doc
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - draft trd
+  - write trd
+  - technical design
+  - architecture doc
+  - design document
+  - system design
+  - technical spec
+  - tech spec
+
+prerequisites:
+  - PRD must exist at jarvis/prd/
+
+phases:
+  - id: load_context
+    name: Load Prerequisites
+    parallel: true
+    steps:
+      - id: load_prd
+        action: view_file
+        input:
+          path: "jarvis/prd/{prd_filename}"
+        description: Load the PRD this TRD implements
+        timeout_ms: 10000
+      - id: extract_cardinals
+        action: cardinal_rules_extract
+        input:
+          domain: "engineering, deploy"
+          source: "both"
+        description: Get technical and deployment constraints
+        timeout_ms: 10000
+      - id: research_patterns
+        action: deep_research
+        input:
+          query: "{technical_approach} best practices architecture patterns"
+          sources: 3
+          per_source_timeout: 30000
+        description: Research existing architectural patterns
+        timeout_ms: 35000
+
+  - id: architecture_design
+    name: Architecture and Data Modeling
+    depends_on:
+      - load_context
+    parallel: true
+    steps:
+      - id: c4_diagrams
+        action: architecture_diagrammer
+        input:
+          system: "{system_name}"
+          types: ["c4_context", "c4_container", "sequence"]
+        description: Full C4 architecture diagram suite
+      - id: data_models
+        action: define_data_models
+        input:
+          entities: "{entities_from_prd}"
+        description: Database schema definitions
+      - id: api_contracts
+        action: define_api_contracts
+        input:
+          endpoints: "{endpoints_from_prd}"
+          format: "openapi"
+        description: API endpoint specifications
+
+  - id: document_assembly
+    name: Assemble TRD Document
+    depends_on:
+      - architecture_design
+    steps:
+      - id: write_trd
+        action: draft_trd_document
+        input:
+          prd: "{loaded_prd}"
+          diagrams: "{generated_diagrams}"
+          models: "{data_models}"
+          contracts: "{api_contracts}"
+          template: "trd-template"
+        description: Compose full TRD document
+      - id: validate_trd
+        action: validate_document
+        input:
+          document: "{trd_draft}"
+          checks: ["completeness", "consistency", "cardinal_compliance", "prd_alignment"]
+        description: Cross-validate against PRD and cardinal rules
+      - id: save_trd
+        action: save_to_cortex
+        input:
+          content: "{validated_trd}"
+          path: "jarvis/prd/{title}-TRD-{date}.md"
+          type: "trd"
+        description: Persist TRD
+
+  - id: annotate_completion
+    name: Record Completion
+    depends_on:
+      - document_assembly
+    steps:
+      - id: annotate
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "tech-design-doc"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "TRD created: {word_count} words, {diagram_count} diagrams, {api_count} API contracts"
+
+success_criteria:
+  - PRD loaded and aligned
+  - All C4 diagrams generated
+  - Data models defined
+  - API contracts specified (OpenAPI format)
+  - Cardinal rules validated
+  - File persisted to jarvis/prd/
+
+budget:
+  estimated_turns: 180
+  max_duration_seconds: 150

@@ -6,8 +6,9 @@
  */
 
 import { handoffToV2, listV2Sessions } from "@/lib/v2/bridge";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function GET(request: Request) {
+export const GET = requireAllowlist(async (request: Request) => {
   const { searchParams } = new URL(request.url);
   const status = searchParams.get("status") ?? "all";
   const limit = Number.parseInt(searchParams.get("limit") ?? "10", 10);
@@ -19,9 +20,9 @@ export async function GET(request: Request) {
   }
 
   return Response.json(result);
-}
+});
 
-export async function POST(request: Request) {
+export const POST = requireAllowlist(async (request: Request) => {
   let body: { prompt?: string; context?: string; model?: string };
   try {
     body = await request.json();
@@ -46,4 +47,4 @@ export async function POST(request: Request) {
   }
 
   return Response.json(result, { status: 201 });
-}
+});

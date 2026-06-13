@@ -5,11 +5,12 @@
 
 import { getPlaybook } from "@/lib/connectors/playbook-loader";
 import { initConnectors } from "@/lib/connectors/init";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
-export async function GET(
+export const GET = requireAllowlist(async (
   _req: Request,
   { params }: { params: Promise<{ name: string }> }
-) {
+) => {
   const { name } = await params;
 
   // Ensure registry is populated (idempotent)
@@ -34,4 +35,4 @@ export async function GET(
       level: s.level,
     })),
   });
-}
+});

@@ -7,6 +7,7 @@ import { DataStreamProvider } from "@/components/chat/data-stream-provider";
 import { ChatSettingsProvider } from "@/components/chat/chat-settings-provider";
 import { SidebarProvider } from "@/components/ui/sidebar";
 import { ActiveChatProvider } from "@/hooks/use-active-chat";
+import { V2SessionProvider } from "@/hooks/use-v2-session";
 import { auth } from "../(auth)/auth";
 
 export default function Layout({ children }: { children: React.ReactNode }) {
@@ -16,13 +17,15 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         src="https://cdn.jsdelivr.net/pyodide/v0.23.4/full/pyodide.js"
         strategy="afterInteractive"
       />
-      <DataStreamProvider>
-        <ChatSettingsProvider>
-          <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
-            <SidebarShell>{children}</SidebarShell>
-          </Suspense>
-        </ChatSettingsProvider>
-      </DataStreamProvider>
+      <V2SessionProvider>
+        <DataStreamProvider>
+          <ChatSettingsProvider>
+            <Suspense fallback={<div className="flex h-dvh bg-sidebar" />}>
+              <SidebarShell>{children}</SidebarShell>
+            </Suspense>
+          </ChatSettingsProvider>
+        </DataStreamProvider>
+      </V2SessionProvider>
     </>
   );
 }

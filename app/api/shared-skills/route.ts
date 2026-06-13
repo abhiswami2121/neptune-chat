@@ -7,6 +7,7 @@
 import { NextResponse } from "next/server";
 import { readFileSync, readdirSync, existsSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const SHARED_SKILLS_DIR = join(process.cwd(), "shared-skills");
 
@@ -65,7 +66,7 @@ function discoverSharedSkills(): SharedSkillEntry[] {
   return skills;
 }
 
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const skills = discoverSharedSkills();
 
   return NextResponse.json({
@@ -75,4 +76,4 @@ export async function GET() {
     agents: ["neptune-chat", "neptune-v2"],
     note: "These skills are shared across all NewLeaf agents. Both Chat and V2 load them on startup.",
   });
-}
+});

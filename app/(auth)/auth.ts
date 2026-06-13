@@ -4,6 +4,7 @@ import type { DefaultJWT } from "next-auth/jwt";
 import Credentials from "next-auth/providers/credentials";
 import { DUMMY_PASSWORD } from "@/lib/constants";
 import { createGuestUser, getUser } from "@/lib/db/queries";
+import { isAllowed } from "@/lib/auth/allowlist";
 import { authConfig } from "./auth.config";
 
 export type UserType = "guest" | "regular";
@@ -80,17 +81,11 @@ export const {
   ],
   callbacks: {
     signIn({ user }) {
-      const ALLOWED_EMAILS: string[] = [
-        "abhiswami2121@gmail.com",
-        "jerry.b.yirenkyi@gmail.com",
-      ];
-
-      // Guest users (no email) are allowed through
-      if (user.type === "guest") return true;
+      // PHASE A: Block guest users — chat is NOT available as guest
+      if (user.type === "guest") return false;
 
       // Regular users must have an allowed email
-      const email = user.email?.toLowerCase();
-      if (!email || !ALLOWED_EMAILS.includes(email)) {
+      if (!isAllowed(user.email)) {
         return false;
       }
 

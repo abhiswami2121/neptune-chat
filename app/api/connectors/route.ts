@@ -14,6 +14,7 @@ import {
   getInventoryCoverage,
   getInventoryEntry,
 } from "@/lib/connectors/inventory";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 interface ConnectorInfo {
   id: string;
@@ -33,7 +34,7 @@ interface ConnectorInfo {
   coverage: number;
 }
 
-export function GET() {
+export const GET = requireAllowlist(function GET() {
   // Ensure registry is populated (idempotent)
   initConnectors();
 
@@ -113,4 +114,4 @@ export function GET() {
     },
     dynamic_discovered: dynamicNames,
   });
-}
+});

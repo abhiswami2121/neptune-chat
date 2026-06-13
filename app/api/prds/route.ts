@@ -26,7 +26,9 @@ const FALLBACK_PRDS = [
   },
 ];
 
-export async function GET() {
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
+
+export const GET = requireAllowlist(async () => {
   try {
     const bridgeUrl = process.env.VPS_FS_BRIDGE_URL || null;
 
@@ -68,4 +70,4 @@ export async function GET() {
     count: FALLBACK_PRDS.length,
     prds: FALLBACK_PRDS,
   });
-}
+});

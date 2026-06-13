@@ -3,6 +3,7 @@
  * POST /api/wiki — Request wiki content by path.
  */
 import type { NextRequest } from "next/server";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const WIKI_API_URL =
   process.env.HERMES_API_URL || "http://187.127.250.171:8102";
@@ -33,7 +34,7 @@ const FALLBACK_TREE = {
   ],
 };
 
-export async function GET(req: NextRequest) {
+export const GET = requireAllowlist(async (req: NextRequest) => {
   const url = new URL(req.url);
   const path = url.searchParams.get("path");
 
@@ -87,4 +88,4 @@ export async function GET(req: NextRequest) {
     source: "fallback",
     tree: FALLBACK_TREE,
   });
-}
+});

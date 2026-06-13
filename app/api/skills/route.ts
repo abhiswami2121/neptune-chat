@@ -5,6 +5,7 @@
 import { NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const SHARED_SKILLS_ROOT = "/home/neptune/_shared-skills";
 const REGISTRY_PATH = join(SHARED_SKILLS_ROOT, "registry.json");
@@ -79,7 +80,7 @@ const INLINE_REGISTRY: Registry = {
   summary: { totalConnectors: 13, totalFunctions: 10, totalCapabilities: 5, totalSkills: 28 },
 };
 
-export async function GET() {
+export const GET = requireAllowlist(async () => {
   const registry = loadRegistry() || INLINE_REGISTRY;
 
   return NextResponse.json({
@@ -113,4 +114,4 @@ export async function GET() {
     })),
     summary: registry.summary,
   });
-}
+});

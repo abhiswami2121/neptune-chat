@@ -1,0 +1,204 @@
+# Deep Research Workflow
+# Purpose: Parallel 5-source research with synthesis and confidence ranking
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "research", "investigate", "compare", "deep dive"
+
+name: deep-research
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - research
+  - investigate
+  - explore
+  - compare
+  - state of
+  - deep dive
+  - learn about
+  - background on
+  - what is
+  - how does
+  - survey
+
+configuration:
+  sources:
+    - id: tavily_search
+      name: Tavily Search
+      type: api
+      api_key_env: TAVILY_API_KEY
+      timeout_ms: 30000
+      weight: 1.0
+    - id: exa_search
+      name: Exa Search
+      type: api
+      api_key_env: EXA_API_KEY
+      timeout_ms: 30000
+      weight: 0.9
+    - id: github_code_search
+      name: GitHub Code Search
+      type: api
+      api_key_env: null
+      timeout_ms: 30000
+      weight: 0.8
+    - id: web_search
+      name: Web Search (DuckDuckGo)
+      type: api
+      api_key_env: null
+      timeout_ms: 30000
+      weight: 0.7
+    - id: smithery_mcp_search
+      name: Smithery MCP Search
+      type: api
+      api_key_env: SMITHERY_API_KEY
+      timeout_ms: 30000
+      weight: 0.8
+
+  min_sources_required: 2
+  total_timeout_ms: 35000
+
+phases:
+  - id: define_question
+    name: Define Research Question
+    steps:
+      - id: scope_query
+        action: define_research_scope
+        input:
+          query: "{user_query}"
+          focus: "{focus_area}"
+        description: Narrow the research question for precise results
+
+  - id: fire_sources
+    name: Fire Parallel Sources
+    depends_on:
+      - define_question
+    parallel: true
+    steps:
+      - id: call_tavily
+        action: tavily_search
+        input:
+          query: "{scoped_query}"
+          max_results: 10
+        description: Tavily AI search
+        timeout_ms: 30000
+        graceful_fail: true
+      - id: call_exa
+        action: exa_search
+        input:
+          query: "{scoped_query}"
+          num_results: 10
+        description: Exa semantic search
+        timeout_ms: 30000
+        graceful_fail: true
+      - id: call_github
+        action: github_code_search
+        input:
+          query: "{scoped_query}"
+          language: "{language}"
+        description: GitHub code search for implementation examples
+        timeout_ms: 30000
+        graceful_fail: true
+      - id: call_web
+        action: web_search
+        input:
+          query: "{scoped_query}"
+          max_results: 10
+        description: Broad web search via DuckDuckGo
+        timeout_ms: 30000
+        graceful_fail: true
+      - id: call_smithery
+        action: smithery_mcp_search
+        input:
+          query: "{scoped_query}"
+        description: Smithery MCP tool search
+        timeout_ms: 30000
+        graceful_fail: true
+
+  - id: synthesize
+    name: Synthesize Results
+    depends_on:
+      - fire_sources
+    steps:
+      - id: rank_sources
+        action: rank_by_confidence
+        input:
+          results: "{all_results}"
+          weights:
+            confidence: 0.4
+            recency: 0.3
+            relevance: 0.3
+        description: Rank sources by weighted scoring
+      - id: merge_findings
+        action: merge_overlapping
+        input:
+          ranked: "{ranked_results}"
+        description: Merge similar findings, resolve contradictions
+      - id: generate_output
+        action: format_research_output
+        input:
+          merged: "{merged_findings}"
+          format: "structured_json"
+        description: Produce structured output
+
+  - id: cross_reference
+    name: Cross-Reference with Cortex
+    depends_on:
+      - synthesize
+    steps:
+      - id: check_cortex
+        action: search_cortex
+        input:
+          query: "{research_query}"
+          limit: 5
+        description: Check for existing knowledge
+      - id: enrich_findings
+        action: enrich_with_cortex
+        input:
+          findings: "{synthesized}"
+          cortex: "{cortex_results}"
+        description: Add cortex context to findings
+
+  - id: persist
+    name: Save Findings
+    depends_on:
+      - cross_reference
+    steps:
+      - id: save_research
+        action: save_to_cortex
+        input:
+          content: "{enriched_findings}"
+          path: "jarvis/cortex/research/{query_slug}-{date}.md"
+          type: "research"
+        description: Persist reusable research
+        condition: "{findings_are_reusable}"
+      - id: annotate
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "deep-research"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "Research: {source_count}/{total_sources} sources, confidence={avg_confidence}"
+
+success_criteria:
+  - At least 2 sources returned results
+  - Synthesis has confidence >= 0.4
+  - Structured output produced
+  - Cortex cross-reference complete
+  - Findings scored by confidence + recency + relevance
+
+output_schema:
+  type: object
+  properties:
+    query: string
+    findings: array
+    sources:
+      type: array
+      items:
+        source_name: string
+        confidence: number
+        result_count: number
+    overall_confidence: number
+    recommendations: array
+    timestamp: string

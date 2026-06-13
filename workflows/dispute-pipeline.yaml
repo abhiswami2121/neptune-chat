@@ -1,0 +1,118 @@
+# Workflow: Credit Dispute Pipeline
+# U3.6 Workflow Engine — Starter Template 4/5
+# Trigger: New dispute round → Pull credit report → AI classify → Update Base44 → Report
+
+id: dispute-pipeline
+name: "Credit Dispute Pipeline"
+description: "Process new credit dispute rounds — pull credit reports, AI classify items, update Base44, report results"
+category: Operations
+source: manual
+createdAt: "2026-06-12"
+updatedAt: "2026-06-12"
+
+nodes:
+  - id: dp-trigger
+    type: trigger
+    position: { x: 250, y: 0 }
+    data:
+      label: "New Dispute Round Trigger"
+      nodeType: trigger
+      triggerType: manual
+
+  - id: dp-pull-credit
+    type: action
+    position: { x: 250, y: 130 }
+    data:
+      label: "Pull Credit Report"
+      nodeType: action
+      connectorId: base44
+      toolName: queryEntity
+      params:
+        entity: credit_reports
+        sort: "-createdAt"
+        limit: 1
+
+  - id: dp-ai-classify
+    type: ai
+    position: { x: 250, y: 260 }
+    data:
+      label: "AI: Classify Negative Items"
+      nodeType: ai
+      prompt: "Analyze the credit report and classify each negative item by dispute reason: inaccurate_balance, account_not_mine, paid_in_full, too_old_to_report, duplicate, identity_theft, other. Flag items with strongest evidence for removal."
+      modelId: deepseek-v4-pro
+
+  - id: dp-conditional
+    type: conditional
+    position: { x: 250, y: 390 }
+    data:
+      label: "Items to dispute?"
+      nodeType: conditional
+      condition: "Has at least one negative item with valid dispute reason"
+
+  - id: dp-create-round
+    type: action
+    position: { x: 100, y: 520 }
+    data:
+      label: "Create Dispute Round"
+      nodeType: action
+      connectorId: base44
+      toolName: createEntity
+      params:
+        entity: dispute_rounds
+        status: active
+
+  - id: dp-ai-draft
+    type: ai
+    position: { x: 100, y: 650 }
+    data:
+      label: "AI: Draft Dispute Letters"
+      nodeType: ai
+      prompt: "Draft professional dispute letters for each classified negative item. Use FCRA-compliant language. Include: account details, dispute reason, evidence summary, and requested resolution. Format as ready-to-send text."
+      modelId: deepseek-v4-pro
+
+  - id: dp-output-skip
+    type: output
+    position: { x: 400, y: 520 }
+    data:
+      label: "Report: No Items to Dispute"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+  - id: dp-output-final
+    type: output
+    position: { x: 100, y: 780 }
+    data:
+      label: "Post Dispute Letters to Slack"
+      nodeType: output
+      outputType: slack
+      outputConfig:
+        channel: jarvis-admin
+
+edges:
+  - id: e-dp-1
+    source: dp-trigger
+    target: dp-pull-credit
+  - id: e-dp-2
+    source: dp-pull-credit
+    target: dp-ai-classify
+  - id: e-dp-3
+    source: dp-ai-classify
+    target: dp-conditional
+  - id: e-dp-4
+    source: dp-conditional
+    target: dp-create-round
+    data:
+      branch: "true"
+  - id: e-dp-5
+    source: dp-conditional
+    target: dp-output-skip
+    data:
+      branch: "false"
+  - id: e-dp-6
+    source: dp-create-round
+    target: dp-ai-draft
+  - id: e-dp-7
+    source: dp-ai-draft
+    target: dp-output-final

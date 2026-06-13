@@ -9,6 +9,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readdirSync, statSync, existsSync, readFileSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 interface FileTreeNode {
   name: string;
@@ -111,7 +112,7 @@ function buildTree(dirPath: string, currentDepth: number, maxDepth: number, root
   return nodes;
 }
 
-export async function GET(request: NextRequest) {
+export const GET = requireAllowlist(async (request: NextRequest) => {
   const root = request.nextUrl.searchParams.get("root") || "playbooks";
 
   const config = ROOTS[root];
@@ -139,7 +140,7 @@ export async function GET(request: NextRequest) {
     total: countNodes(tree),
     hint: "Use children arrays to render tree. Each node has name, type, path, optional description and icon.",
   });
-}
+});
 
 function countNodes(nodes: FileTreeNode[]): number {
   let count = 0;

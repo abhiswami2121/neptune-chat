@@ -1,0 +1,149 @@
+# Gap Analysis Workflow
+# Purpose: Systematic current vs target state diff with classified remediation
+# Domain: planning-research
+# Version: 1.0.0
+# Created: 2026-06-13
+# Trigger: "gap analysis", "audit", "compare current vs target", "what is missing"
+
+name: gap-analysis
+version: "1.0.0"
+domain: planning-research
+trigger_keywords:
+  - gap analysis
+  - gap
+  - what is missing
+  - audit
+  - compare current vs target
+  - delta
+  - discrepancy
+  - what's missing
+
+phases:
+  - id: define_states
+    name: Define Current and Target States
+    parallel: true
+    steps:
+      - id: current_state
+        action: gather_current_state
+        input:
+          scope: "{domain_or_system}"
+          sources: ["cortex", "codebase", "playbooks", "user_input"]
+        description: Document current capabilities and state
+      - id: target_state
+        action: define_target_state
+        input:
+          prd: "{prd_path}"
+          requirements: "{requirements}"
+          user_input: "{user_target}"
+        description: Document desired target state
+
+  - id: systematic_diff
+    name: Run Systematic Difference Analysis
+    depends_on:
+      - define_states
+    steps:
+      - id: feature_diff
+        action: diff_features
+        input:
+          current: "{current_state}"
+          target: "{target_state}"
+        description: Compare feature by feature
+      - id: capability_diff
+        action: diff_capabilities
+        input:
+          current: "{current_state}"
+          target: "{target_state}"
+        description: Compare capabilities
+      - id: quality_diff
+        action: diff_quality
+        input:
+          current: "{current_state}"
+          target: "{target_state}"
+        description: Compare non-functional attributes (perf, security, reliability)
+
+  - id: classify_gaps
+    name: Classify and Prioritize Gaps
+    depends_on:
+      - systematic_diff
+    steps:
+      - id: classify
+        action: classify_gap_severity
+        input:
+          gaps: "{all_gaps}"
+        description: Classify as critical/high/medium/low
+      - id: prioritize
+        action: prioritize_gaps
+        input:
+          classified: "{classified_gaps}"
+          criteria: ["business_impact", "technical_debt", "urgency", "effort"]
+        description: Rank gaps by priority
+
+  - id: remediation_plan
+    name: Generate Remediation Plan
+    depends_on:
+      - classify_gaps
+    steps:
+      - id: generate_fixes
+        action: generate_remediation
+        input:
+          gaps: "{prioritized_gaps}"
+        description: Generate specific fixes for each gap
+      - id: estimate_effort
+        action: estimate_effort
+        input:
+          fixes: "{remediation_actions}"
+        description: Estimate effort for each remediation
+      - id: generate_timeline
+        action: generate_remediation_timeline
+        input:
+          fixes: "{estimated_fixes}"
+        description: Sequence fixes by priority and dependency
+
+  - id: document_and_save
+    name: Document and Persist
+    depends_on:
+      - remediation_plan
+    steps:
+      - id: save_analysis
+        action: save_to_cortex
+        input:
+          content: "{full_gap_analysis}"
+          path: "jarvis/prd/{title}-GAP-ANALYSIS-{date}.md"
+          type: "plan"
+        description: Persist gap analysis
+      - id: annotate
+        action: annotation_collector
+        input:
+          domain: "planning-research"
+          playbook: "playbook-planning-research.md"
+          skillOrWorkflow: "gap-analysis"
+          outcome: "{outcome}"
+          duration_ms: "{duration}"
+          learning: "Gap analysis: {total_gaps} gaps ({critical} critical, {high} high)"
+
+success_criteria:
+  - Current state documented
+  - Target state defined
+  - All gaps identified and classified
+  - Remediation plan generated with effort estimates
+  - File persisted to jarvis/prd/
+
+output_schema:
+  type: object
+  properties:
+    summary: string
+    current_state_summary: string
+    target_state_summary: string
+    gaps:
+      type: array
+      items:
+        category: string
+        description: string
+        severity: string
+        remediation: string
+        effort_estimate: string
+    total_gaps: number
+    critical_count: number
+    high_count: number
+    medium_count: number
+    low_count: number

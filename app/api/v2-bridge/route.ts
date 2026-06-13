@@ -12,6 +12,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { secrets } from "@/secrets";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const NEPTUNE_V2_API_BASE =
   process.env.NEPTUNE_V2_API_BASE || "https://neptune-v2.vercel.app";
@@ -71,17 +72,17 @@ async function proxyToV2(req: NextRequest, path: string) {
   }
 }
 
-export async function GET(req: NextRequest) {
+export const GET = requireAllowlist(async (req: NextRequest) => {
   const path = req.nextUrl.searchParams.get("path") || "agent-sessions";
   return proxyToV2(req, path);
-}
+});
 
-export async function POST(req: NextRequest) {
+export const POST = requireAllowlist(async (req: NextRequest) => {
   const path = req.nextUrl.searchParams.get("path") || "agent-sessions";
   return proxyToV2(req, path);
-}
+});
 
-export async function PATCH(req: NextRequest) {
+export const PATCH = requireAllowlist(async (req: NextRequest) => {
   const path = req.nextUrl.searchParams.get("path") || "agent-sessions";
   return proxyToV2(req, path);
-}
+});

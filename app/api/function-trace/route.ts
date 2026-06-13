@@ -12,6 +12,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const CWD = process.cwd();
 
@@ -40,7 +41,7 @@ function loadRegistry(): MasterRegistry | null {
   }
 }
 
-export async function GET(req: NextRequest) {
+export const GET = requireAllowlist(async (req: NextRequest) => {
   const registry = loadRegistry();
   if (!registry) {
     return NextResponse.json(
@@ -136,4 +137,4 @@ export async function GET(req: NextRequest) {
     },
     graph_version: "4d-v1",
   });
-}
+});

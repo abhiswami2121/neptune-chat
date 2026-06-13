@@ -16,6 +16,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { readFileSync, existsSync, readdirSync, statSync } from "fs";
 import { join } from "path";
+import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 const CWD = process.cwd();
 
@@ -148,7 +149,7 @@ function buildIndex(tags: GraphTag[]) {
 
 // ── GET Handler ──────────────────────────────────────────────────────────────
 
-export async function GET(req: NextRequest) {
+export const GET = requireAllowlist(async (req: NextRequest) => {
   const tags = loadGraphTags();
   const { byId, byFunction, byConnectedTo, byIntent, byType } = buildIndex(tags);
 
@@ -260,4 +261,4 @@ export async function GET(req: NextRequest) {
       intent: "Find entities matching an intent tag",
     },
   });
-}
+});
