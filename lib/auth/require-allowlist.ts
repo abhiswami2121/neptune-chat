@@ -24,9 +24,26 @@ import { auth } from "@/app/(auth)/auth";
 import { isAllowed } from "./allowlist";
 
 /**
+ * Check if the request has a valid NEPTUNE_INTERNAL_TOKEN Bearer token.
+ * Used as a bypass for internal API-to-API calls (e.g., V2 → Chat).
+ */
+function hasValidInternalToken(request: Request | any): boolean {
+  try {
+    const authHeader = request?.headers?.get?.("authorization") ?? "";
+    const token = authHeader.replace(/^Bearer\s+/i, "").trim();
+    const expected = process.env.NEPTUNE_INTERNAL_TOKEN;
+    return !!(token && expected && token === expected);
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Wrap an API handler with auth + allowlist enforcement.
  * Uses a loose function signature to stay compatible with all Next.js
  * route handler variants (NextRequest vs Request, typed params vs generic).
+ *
+ * Allows bypass via Bearer NEPTUNE_INTERNAL_TOKEN for internal API calls.
  *
  * Returns 401 JSON response if the user is not authenticated or not in the allowlist.
  */
@@ -34,6 +51,14 @@ import { isAllowed } from "./allowlist";
 export function requireAllowlist<T extends (...args: any[]) => any>(handler: T): T {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   return (async (...args: any[]) => {
+    // First argument is the request object
+    const request = args[0];
+
+    // Bypass: valid NEPTUNE_INTERNAL_TOKEN in Authorization header
+    if (hasValidInternalToken(request)) {
+      return handler(...args);
+    }
+
     const session = await auth();
 
     // No session = not authenticated
