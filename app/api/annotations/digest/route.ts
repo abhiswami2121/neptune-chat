@@ -268,7 +268,7 @@ export async function GET(req: Request) {
   const { searchParams } = new URL(req.url);
   const period = searchParams.get("period") || "week";
   const daysBack = period === "week" ? 7 : period === "month" ? 30 : parseInt(period, 10) || 7;
-  const postToSlack = searchParams.get("postToSlack") === "true" || searchParams.has("cron");
+  const shouldPostToSlack = searchParams.get("postToSlack") === "true" || searchParams.has("cron");
   const generateAI = searchParams.get("ai") === "true" || searchParams.has("cron");
   const persist = searchParams.get("persist") === "true" || searchParams.has("cron");
 
@@ -397,7 +397,7 @@ export async function GET(req: Request) {
   }
 
   // Post to Slack if requested
-  if (postToSlack) {
+  if (shouldPostToSlack) {
     digest.slackPosted = await postToSlack(digest);
   }
 
