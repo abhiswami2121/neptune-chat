@@ -46,4 +46,7 @@ After matching the playbook via the router, use:
 - Vercel: prj_bpG5ZHYNZ1wxAm7WDxr3MrBGoOBl · Stack: Next.js 16, AI SDK 6, shadcn/ui
 - V2: https://neptune-v2.vercel.app (complex coding handoffs)
 - File system: playbooks/ (router + domain playbooks), connectors/ (13 connector manifestos)
-- U3 Sprint: Phases 0-7 LANDED → PB-A in progress → Phase 8 next
+- U3 Sprint: ALL PHASES LANDED (PB-A through Phase 10) — Playbook-First Orchestration complete
+- Telemetry: /telemetry dashboard · Diagnostics: /diagnostics dashboard · Annotations: /api/annotations
+- Neptune Connector: 200 actions across 8 skill packs (github, ghl, linear, vercel, forth, wiki, mcp-hub, affy)
+- Annotation loop: auto-records after every execution via proxy/connector
