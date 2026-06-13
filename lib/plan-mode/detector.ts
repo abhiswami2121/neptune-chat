@@ -127,7 +127,8 @@ export function detectPhasesFromRoutine(routine: {
 }): PhaseDetection {
   const requiresPlanMode =
     routine.requires_plan_mode === true ||
-    (routine.steps && routine.steps.length >= DEFAULT_CONFIG.phaseThreshold);
+    (routine.steps && routine.steps.length >= DEFAULT_CONFIG.phaseThreshold) ||
+    false;
 
   return {
     requiresPlanMode,
