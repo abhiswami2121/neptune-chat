@@ -186,13 +186,13 @@ export const POST = requireAllowlist(async (req: NextRequest) => {
         const entity: EntityInsert = {
           type: e.type as EntityType,
           name: e.name.trim(),
-          description: e.description,
+          description: e.description ?? undefined,
           properties: {
             ...(e.properties ?? {}),
             _ingested_by: source,
             _ingested_at: new Date().toISOString(),
           },
-          path: e.path ?? null,
+          path: e.path ?? undefined,
           confidence: e.confidence ?? defaultConfidence,
           provenance: e.provenance ?? {
             sessionId: `u9-annotation-loop`,
