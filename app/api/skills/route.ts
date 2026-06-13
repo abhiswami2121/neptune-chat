@@ -18,6 +18,8 @@ interface SkillEntry {
   also_in?: string[];
   tools?: number;
   dependencies?: string[];
+  env_required?: string[];
+  env_optional?: string[];
 }
 
 interface Registry {
