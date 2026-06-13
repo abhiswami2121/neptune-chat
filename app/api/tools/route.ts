@@ -3,7 +3,7 @@ import { requireAllowlist } from "@/lib/auth/require-allowlist";
 
 /**
  * U2.1.C — Gatekeeper Tools Endpoint
- * Reduced from 21 tools to 6 gatekeeper tools per Pattern A
+ * Reduced from 21 tools to 7 gatekeeper tools per Pattern A
  * (Documentation-Driven Runtime architecture).
  *
  * The 6 tools form a progressive disclosure chain:
@@ -50,6 +50,12 @@ export const GET = requireAllowlist(async () => {
       category: "gatekeeper",
       description:
         "Hand off complex multi-step coding tasks to Neptune V2. Modes: 'modify_existing' (clone repo, fix, commit, PR, deploy) and 'new_project' (create GitHub repo, scaffold Next.js 16 + shadcn, push, deploy to Vercel). Use for any task too large for self_code.",
+    },
+    {
+      name: "run_workflow",
+      category: "gatekeeper",
+      description:
+        "Execute a predefined YAML workflow from playbooks/<domain>/workflows/. Workflows chain multiple steps: research, PRD generation, gap analysis, implementation planning, mission dispatch, and tech design. Use for automated planning-research pipelines and domain-specific automation.",
     },
   ];
 
