@@ -248,6 +248,30 @@ function resolveSkillPaths(skillPath: string): string[] {
   ];
 }
 
+// ── Phase 13.B: Usage logging helper ──────────────────────────────────────
+
+const API_BASE = process.env.APP_BASE_URL || `http://localhost:${process.env.PORT || 3000}`;
+
+async function logUsageToLib(skillLoaded: string, skillType: string, success: boolean, tokens?: number, latencyMs?: number) {
+  try {
+    await fetch(`${API_BASE}/api/library/log-usage`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-token": process.env.NEPTUNE_INTERNAL_TOKEN || "",
+      },
+      body: JSON.stringify({
+        session_id: "load-skill-legacy",
+        skill_loaded: skillLoaded,
+        skill_type: skillType,
+        success_marker: success,
+        tokens_actual: tokens || null,
+        latency_actual_ms: latencyMs || null,
+      }),
+    }).catch(() => {});
+  } catch { /* silent */ }
+}
+
 // ── Main Tool ────────────────────────────────────────────────────────────────
 
 export const loadSkill = tool({
@@ -268,6 +292,7 @@ export const loadSkill = tool({
       ),
   }),
   execute: async ({ skill_path }) => {
+    const startTime = Date.now();
     const paths = resolveSkillPaths(skill_path);
 
     const results: SkillContent = {
@@ -301,6 +326,12 @@ export const loadSkill = tool({
         results.sources.push(fsPath);
       }
     }
+
+    const latency = Date.now() - startTime;
+    const tokens = results.content ? Math.ceil(results.content.length / 2.5) : 0;
+
+    // Phase 13.B: Log usage
+    logUsageToLib(skill_path, "skill", foundAny, tokens, latency);
 
     if (!foundAny) {
       // Try listing the local skills directory to give the user context on what's available

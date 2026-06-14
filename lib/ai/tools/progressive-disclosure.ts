@@ -79,6 +79,46 @@ async function loadFromLibrary(type: string, name: string): Promise<{
   }
 }
 
+// ── Phase 13.B: Usage Logging ──────────────────────────────────────────────
+
+/**
+ * Logs a skill load event to library_usage_logs (immutable audit trail).
+ * Called inside each progressive disclosure tool after every load.
+ * Non-blocking — fire-and-forget, failures are silent.
+ */
+async function logUsage(params: {
+  skillLoaded: string;
+  skillType: string;
+  success: boolean;
+  sessionId?: string;
+  playbookRoutedFrom?: string;
+  tokensActual?: number;
+  latencyActualMs?: number;
+}) {
+  try {
+    const logUrl = `${API_BASE}/api/library/log-usage`;
+    await fetch(logUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-internal-token": process.env.NEPTUNE_INTERNAL_TOKEN || "",
+      },
+      body: JSON.stringify({
+        session_id: params.sessionId || "unknown",
+        skill_loaded: params.skillLoaded,
+        skill_type: params.skillType,
+        playbook_routed_from: params.playbookRoutedFrom || null,
+        success_marker: params.success,
+        tokens_actual: params.tokensActual || null,
+        latency_actual_ms: params.latencyActualMs || null,
+      }),
+      // Fire-and-forget: short timeout, don't block the tool
+    }).catch(() => {}); // silent failure
+  } catch {
+    // Logging failure must never block the tool
+  }
+}
+
 // ── load_playbook ──────────────────────────────────────────────────────────
 
 export const loadPlaybook = tool({
@@ -98,9 +138,23 @@ export const loadPlaybook = tool({
         "'marketing', 'reporting', 'HR', 'engineering', 'vps-ops', 'planning-research', " +
         "'vercel-discipline', 'agent-orchestration'."
       ),
+    session_id: z.string().optional().describe("Current session ID for usage tracking"),
   }),
-  execute: async ({ name }) => {
+  execute: async ({ name, session_id }) => {
+    const startTime = Date.now();
     const result = await loadFromLibrary("playbook", name);
+    const latency = Date.now() - startTime;
+
+    // Phase 13.B: Log usage
+    logUsage({
+      skillLoaded: name,
+      skillType: "playbook",
+      success: result.loaded,
+      sessionId: session_id,
+      playbookRoutedFrom: undefined,
+      tokensActual: result.content?.length ? Math.ceil(result.content.length / 2.5) : undefined,
+      latencyActualMs: latency,
+    });
 
     if (!result.loaded) {
       return {
@@ -140,21 +194,33 @@ export const loadConnector = tool({
         "Examples: 'nmi', 'slack', 'github', 'base44', 'ghl', 'hyperswitch', " +
         "'forth', 'vapi', 'vercel', 'nmi-connector', 'slack-connector'."
       ),
+    playbook_routed_from: z.string().optional().describe("Which playbook routed to this connector"),
+    session_id: z.string().optional().describe("Current session ID for usage tracking"),
   }),
-  execute: async ({ name }) => {
-    // Normalize: allow both "nmi" and "nmi-connector"
+  execute: async ({ name, playbook_routed_from, session_id }) => {
+    const startTime = Date.now();
     const normalized = name.endsWith("-connector") ? name : `${name}-connector`;
 
     // Try both normalized and original
     let result = await loadFromLibrary("connector", normalized);
     if (!result.loaded) {
-      // Try original name
       result = await loadFromLibrary("connector", name);
     }
-    // Try without -connector
     if (!result.loaded) {
       result = await loadFromLibrary("connector", name.replace(/-connector$/, ""));
     }
+    const latency = Date.now() - startTime;
+
+    // Phase 13.B: Log usage
+    logUsage({
+      skillLoaded: name,
+      skillType: "connector",
+      success: result.loaded,
+      sessionId: session_id,
+      playbookRoutedFrom: playbook_routed_from,
+      tokensActual: result.content?.length ? Math.ceil(result.content.length / 2.5) : undefined,
+      latencyActualMs: latency,
+    });
 
     if (!result.loaded) {
       return {
@@ -194,9 +260,24 @@ export const loadFunction = tool({
         "Function name. Examples: 'calculate-refund-eligibility', 'cof-health-audit', " +
         "'validate-action', 'resolve-customer-identity', 'generate-ai-email'."
       ),
+    playbook_routed_from: z.string().optional().describe("Which playbook routed to this function"),
+    session_id: z.string().optional().describe("Current session ID for usage tracking"),
   }),
-  execute: async ({ name }) => {
+  execute: async ({ name, playbook_routed_from, session_id }) => {
+    const startTime = Date.now();
     const result = await loadFromLibrary("function", name);
+    const latency = Date.now() - startTime;
+
+    // Phase 13.B: Log usage
+    logUsage({
+      skillLoaded: name,
+      skillType: "function",
+      success: result.loaded,
+      sessionId: session_id,
+      playbookRoutedFrom: playbook_routed_from,
+      tokensActual: result.content?.length ? Math.ceil(result.content.length / 2.5) : undefined,
+      latencyActualMs: latency,
+    });
 
     if (!result.loaded) {
       return {

@@ -205,3 +205,132 @@ export const chatCheckpoint = pgTable("chat_checkpoints", {
 });
 
 export type ChatCheckpoint = InferSelectModel<typeof chatCheckpoint>;
+
+// ── Phase 12: Library Graph Tables (0007_library_graph.sql) ──────────────────
+
+export const libraryConnector = pgTable("library_connectors", {
+  name: text("name").primaryKey().notNull(),
+  domain: text("domain").notNull().default(""),
+  mcpEnabled: boolean("mcp_enabled").notNull().default(false),
+  description: text("description").notNull().default(""),
+  primaryDomain: text("primary_domain"),
+  alsoIn: jsonb("also_in").default([]),
+  dependencies: jsonb("dependencies").default([]),
+  tools: integer("tools").notNull().default(0),
+  toolNames: jsonb("tool_names").default([]),
+  version: text("version").notNull().default("1.0.0"),
+  filePath: text("file_path"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryConnector = InferSelectModel<typeof libraryConnector>;
+
+export const librarySkill = pgTable(
+  "library_skills",
+  {
+    name: text("name").notNull(),
+    type: text("type").notNull().default("connector"),
+    connectorName: text("connector_name"),
+    description: text("description").notNull().default(""),
+    filePath: text("file_path"),
+    content: text("content"),
+    version: text("version").notNull().default("1.0.0"),
+    // Phase 13.A: Constraint-aware columns
+    contextTokensEstimated: integer("context_tokens_estimated"),
+    typicalLatencyMs: integer("typical_latency_ms"),
+    costPerInvocationUsd: jsonb("cost_per_invocation_usd"),
+    dependencies: jsonb("dependencies").default([]),
+    incompatibleWith: jsonb("incompatible_with").default([]),
+    optimalFor: jsonb("optimal_for").default([]),
+    suboptimalFor: jsonb("suboptimal_for").default([]),
+    createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => ({
+    pk: primaryKey({ columns: [table.name, table.type] }),
+  })
+);
+
+export type LibrarySkill = InferSelectModel<typeof librarySkill>;
+
+export const libraryFunction = pgTable("library_functions", {
+  name: text("name").primaryKey().notNull(),
+  signature: text("signature"),
+  skillName: text("skill_name"),
+  description: text("description").notNull().default(""),
+  domain: text("domain"),
+  alsoIn: jsonb("also_in").default([]),
+  dependencies: jsonb("dependencies").default([]),
+  // Phase 13.A: Constraint-aware columns
+  contextTokensEstimated: integer("context_tokens_estimated"),
+  typicalLatencyMs: integer("typical_latency_ms"),
+  costPerInvocationUsd: jsonb("cost_per_invocation_usd"),
+  incompatibleWith: jsonb("incompatible_with").default([]),
+  optimalFor: jsonb("optimal_for").default([]),
+  suboptimalFor: jsonb("suboptimal_for").default([]),
+  filePath: text("file_path"),
+  version: text("version").notNull().default("1.0.0"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryFunction = InferSelectModel<typeof libraryFunction>;
+
+export const libraryPlaybook = pgTable("library_playbooks", {
+  name: text("name").primaryKey().notNull(),
+  type: text("type").notNull().default("domain"),
+  scopeConnectors: jsonb("scope_connectors").default([]),
+  triggers: jsonb("triggers").default([]),
+  workflows: jsonb("workflows").default([]),
+  description: text("description").notNull().default(""),
+  filePath: text("file_path"),
+  content: text("content"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryPlaybook = InferSelectModel<typeof libraryPlaybook>;
+
+export const libraryWorkflow = pgTable("library_workflows", {
+  name: text("name").primaryKey().notNull(),
+  playbookName: text("playbook_name"),
+  durable: boolean("durable").notNull().default(false),
+  description: text("description").notNull().default(""),
+  filePath: text("file_path"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryWorkflow = InferSelectModel<typeof libraryWorkflow>;
+
+export const libraryEdge = pgTable("library_edges", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  fromNode: text("from_node").notNull(),
+  fromType: text("from_type").notNull(),
+  toNode: text("to_node").notNull(),
+  toType: text("to_type").notNull(),
+  edgeType: text("edge_type").notNull(),
+  weight: integer("weight").notNull().default(1),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryEdge = InferSelectModel<typeof libraryEdge>;
+
+// ── Phase 13.B: Usage Logs ──────────────────────────────────────────────────
+
+export const libraryUsageLog = pgTable("library_usage_logs", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  sessionId: text("session_id"),
+  skillLoaded: text("skill_loaded").notNull(),
+  skillType: text("skill_type").notNull().default("connector"),
+  playbookRoutedFrom: text("playbook_routed_from"),
+  successMarker: boolean("success_marker").notNull().default(true),
+  tokensActual: integer("tokens_actual"),
+  latencyActualMs: integer("latency_actual_ms"),
+  costActualUsd: jsonb("cost_actual_usd"),
+  coLoadedWith: jsonb("co_loaded_with").default([]),
+  timestamp: timestamp("timestamp", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type LibraryUsageLog = InferSelectModel<typeof libraryUsageLog>;
