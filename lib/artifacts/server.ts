@@ -54,6 +54,7 @@ export function createDocumentHandler<T extends ArtifactKind>(config: {
         dataStream: args.dataStream,
         session: args.session,
         modelId: args.modelId,
+        specification: args.specification,
       });
 
       if (args.session?.user?.id) {

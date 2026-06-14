@@ -49,6 +49,11 @@ import { generateTitleFromUserMessage } from "../../actions";
 import { type PostRequestBody, postRequestBodySchema } from "./schema";
 import { discoverActionGroup } from "@/lib/playbook-os-client";
 import { loadPlaybooksForIntent, formatPlaybookContext } from "@/lib/ai/playbook-loader";
+import {
+  createTokenTracker,
+  estimateMessageTokens,
+  generateCheckpointSummary,
+} from "@/lib/ai/token-tracker";
 
 export const maxDuration = 60;
 
@@ -206,9 +211,24 @@ export async function POST(request: Request) {
         formatPlaybookContext(loadPlaybooksForIntent(userPrompt))
       : null;
 
+    // Phase 10-D: Token tracking — estimate tokens from message history
+    const tokenTracker = createTokenTracker(
+      chatModel,
+      estimateMessageTokens(uiMessages as Array<{ role: string; parts: unknown }>, chatModel)
+    );
+
     const stream = createUIMessageStream({
       originalMessages: isToolApprovalFlow ? uiMessages : undefined,
       execute: async ({ writer: dataStream }) => {
+        // Phase 10-D: Send warning if >80% context window used
+        if (tokenTracker.shouldWarn()) {
+          dataStream.write({
+            type: "data-textDelta",
+            data: `\n\n${tokenTracker.getWarningMessage()}\n\n`,
+            transient: false,
+          } as any);
+        }
+
         const baseSystem = systemPrompt({ requestHints, supportsTools });
         const systemWithContext = actionGroupCtx
           ? `${baseSystem}\n\n${actionGroupCtx}`
@@ -296,6 +316,42 @@ export async function POST(request: Request) {
       },
       generateId: generateUUID,
       onFinish: async ({ messages: finishedMessages }) => {
+        // Phase 10-D: Track actual token usage from finished messages
+        const allMessages = [...(uiMessages || []), ...finishedMessages];
+        tokenTracker.addMessageTokens(JSON.stringify(finishedMessages));
+
+        // Phase 10-D: If >95% context window, save a checkpoint (non-blocking)
+        if (tokenTracker.shouldCheckpoint()) {
+          after(async () => {
+            try {
+              const checkpointId = generateUUID();
+              const summary = generateCheckpointSummary(
+                allMessages as Array<{ role: string; parts: unknown }>
+              );
+              const messageIds = finishedMessages.map((m) => m.id);
+
+              // Save checkpoint to DB (table created by migration 0005)
+              const { saveCheckpoint } = await import("@/lib/ai/token-tracker");
+              await saveCheckpoint({
+                id: checkpointId,
+                chatId: id,
+                userId: session?.user?.id ?? "anonymous",
+                reason: "token_limit_95pct",
+                tokenCount: tokenTracker.estimatedTokens,
+                usagePercent: Math.round(tokenTracker.usageRatio * 100),
+                conversationSummary: summary,
+                messageIds,
+                modelId: chatModel,
+                contextWindow: tokenTracker.contextWindow,
+              });
+
+              console.log(`[checkpoint] Auto-saved checkpoint ${checkpointId} at ${tokenTracker.usageRatio * 100}% usage`);
+            } catch (err) {
+              console.warn("[checkpoint] Failed to save (non-fatal):", (err as Error).message);
+            }
+          });
+        }
+
         if (isToolApprovalFlow) {
           for (const finishedMsg of finishedMessages) {
             const existingMsg = uiMessages.find((m) => m.id === finishedMsg.id);

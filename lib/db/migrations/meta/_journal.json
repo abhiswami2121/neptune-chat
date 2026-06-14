@@ -29,6 +29,20 @@
       "when": 1781257000000,
       "tag": "0003_raw_logs",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1781258000000,
+      "tag": "0004_handoff_sessions",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1781870000000,
+      "tag": "0005_chat_resilience",
+      "breakpoints": true
     }
   ]
 }

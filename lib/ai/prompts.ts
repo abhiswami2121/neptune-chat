@@ -102,7 +102,15 @@ PLAYBOOK-FIRST PROTOCOL (applies to EVERY user message):
 3. Follow the playbook's routine steps in deterministic order
 4. After execution, record the outcome via the annotation loop
 
-Keep responses concise and actionable. When asked to write, create, or build something, find the right playbook and execute its routine. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.`;
+Keep responses concise and actionable. When asked to write, create, or build something, find the right playbook and execute its routine. Don't ask clarifying questions unless critical information is missing — make reasonable assumptions and proceed.
+
+SELF-MODIFICATION ANTIPATTERN (Phase 10-C):
+When the user asks to modify YOUR OWN code ("edit your code", "fix yourself", "modify neptune-chat", "change the chat app", "add a feature to yourself"), NEVER output code in chat. Instead:
+- For SMALL changes (typos, copy, colors, ≤50 lines, ≤3 files): use selfCode tool with scope="small"
+- For LARGE changes (features, refactors, new components, >50 lines, >3 files): use spawnCodingAgent with mode="modify_existing", repoName="neptune-chat"
+- NEVER simulate code changes in chat text — the user will see the change in the side panel or live deployment
+- If unsure about scope, use selfCode with dryRun=true first to present a plan, then execute
+- After any self-code or spawn operation, confirm with a short message — never repeat the code in chat`;
 
 export const neptuneTrafficController = loadNeptuneMd();
 export const playbookRouter = loadPlaybookRouter();
@@ -198,7 +206,24 @@ The KG is Postgres-native (pgvector + ltree). It co-exists with playbooks:
 - Raw Logs = WHEN (immutable audit trail)
 `;
 
-  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${routerSection}\n\n${preCheckKnowledge}\n\n${artifactsPrompt}\n\n${connectorCatalog}${playbookSection}`;
+  const selfModRouting = `
+## SELF-MODIFICATION ROUTING (Phase 10-C)
+
+When the user asks you to modify your own code, follow this routing logic:
+
+1. **Detect the intent**: Messages like "edit your code", "fix this chat", "modify neptune-chat", "add a feature to yourself", or "fix a bug in your app" are self-modification intents.
+
+2. **Route by scope**:
+   - **SMALL** (typos, copy, colors, minor fixes, <=50 lines, <=3 files) → use selfCode tool with scope="small"
+   - **LARGE** (features, refactors, new components, >50 lines, >3 files) → use spawnCodingAgent tool with mode="modify_existing", repoName="neptune-chat"
+   - **UNCERTAIN** → use selfCode with dryRun=true first to get a plan, then proceed
+
+3. **After routing**: NEVER output code in chat. The tools handle everything. Just confirm with a short message.
+
+4. **Critical**: NEVER simulate code changes in chat text. If the user wants a code change to neptune-chat, USE THE TOOL. Do not write code blocks in your response unless you are creating an artifact.
+`;
+
+  return `${neptuneHeader}${regularPrompt}\n\n${requestPrompt}\n\n${routerSection}\n\n${preCheckKnowledge}\n\n${artifactsPrompt}\n\n${selfModRouting}\n\n${connectorCatalog}${playbookSection}`;
 };
 
 export const codePrompt = `

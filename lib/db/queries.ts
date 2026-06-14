@@ -12,6 +12,7 @@ import {
   lt,
   type SQL,
 } from "drizzle-orm";
+import type { InferInsertModel } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import type { ArtifactKind } from "@/components/chat/artifact";
@@ -32,6 +33,8 @@ import {
   vote,
 } from "./schema";
 import { generateHashedPassword } from "./utils";
+
+type InsertMessage = InferInsertModel<typeof message>;
 
 const client = postgres(process.env.POSTGRES_URL ?? "");
 const db = drizzle(client);
@@ -237,7 +240,7 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function saveMessages({ messages }: { messages: DBMessage[] }) {
+export async function saveMessages({ messages }: { messages: InsertMessage[] }) {
   try {
     return await db.insert(message).values(messages);
   } catch (_error) {

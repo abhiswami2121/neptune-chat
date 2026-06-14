@@ -2,7 +2,9 @@ import type { InferSelectModel } from "drizzle-orm";
 import {
   boolean,
   foreignKey,
+  integer,
   json,
+  jsonb,
   pgTable,
   primaryKey,
   text,
@@ -35,6 +37,9 @@ export const chat = pgTable("Chat", {
   visibility: varchar("visibility", { enum: ["public", "private"] })
     .notNull()
     .default("private"),
+  // Phase 10: Chat resilience — parent chain and checkpoint linkage
+  parentChatId: uuid("parent_chat_id"),
+  checkpointId: uuid("checkpoint_id"),
 });
 
 export type Chat = InferSelectModel<typeof chat>;
@@ -48,6 +53,10 @@ export const message = pgTable("Message_v2", {
   parts: json("parts").notNull(),
   attachments: json("attachments").notNull(),
   createdAt: timestamp("createdAt").notNull(),
+  // Phase 10: Token tracking + artifact metadata
+  tokenCount: integer("token_count"),
+  artifactSpec: text("artifact_spec"),
+  artifactModel: varchar("artifact_model", { length: 64 }),
 });
 
 export type DBMessage = InferSelectModel<typeof message>;
@@ -172,3 +181,24 @@ export const handoffSession = pgTable("handoff_sessions", {
 });
 
 export type HandoffSession = InferSelectModel<typeof handoffSession>;
+
+// Phase 10: Chat checkpoints — auto-saved when conversation approaches context limit
+export const chatCheckpoint = pgTable("chat_checkpoints", {
+  id: uuid("id").primaryKey().notNull().defaultRandom(),
+  chatId: uuid("chat_id")
+    .notNull()
+    .references(() => chat.id, { onDelete: "cascade" }),
+  userId: uuid("user_id")
+    .notNull()
+    .references(() => user.id, { onDelete: "cascade" }),
+  reason: varchar("reason", { length: 32 }).notNull().default("manual"),
+  tokenCount: integer("token_count").notNull().default(0),
+  usagePercent: integer("usage_percent").notNull().default(0),
+  conversationSummary: text("conversation_summary"),
+  messageIds: jsonb("message_ids").default([]),
+  modelId: varchar("model_id", { length: 64 }),
+  contextWindow: integer("context_window"),
+  createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
+});
+
+export type ChatCheckpoint = InferSelectModel<typeof chatCheckpoint>;
