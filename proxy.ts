@@ -36,6 +36,8 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/tools") ||
     pathname.startsWith("/api/connectors") ||
     pathname.startsWith("/api/workflow") ||
+    pathname.startsWith("/api/workflows") ||
+    pathname.startsWith("/api/parallel-agents") ||
     pathname.startsWith("/api/context") ||
     pathname.startsWith("/api/secrets") ||
     pathname.startsWith("/api/capabilities") ||
@@ -47,10 +49,15 @@ export async function proxy(request: NextRequest) {
     pathname.startsWith("/api/prds") ||
     pathname.startsWith("/api/shared-skills") ||
     pathname.startsWith("/api/function-trace") ||
+    pathname.startsWith("/api/function-registry") ||
     pathname.startsWith("/api/connector-graph") ||
     pathname.startsWith("/api/vault") ||
     pathname.startsWith("/api/wiki") ||
-    pathname.startsWith("/api/integrations")
+    pathname.startsWith("/api/integrations") ||
+    pathname.startsWith("/api/knowledge") ||
+    pathname.startsWith("/api/diagnostics") ||
+    pathname.startsWith("/api/proxy") ||
+    pathname.startsWith("/api/raw-logs")
   ) {
     return NextResponse.next();
   }

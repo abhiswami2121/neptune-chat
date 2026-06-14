@@ -27,12 +27,24 @@ import { isAllowed } from "./allowlist";
  * Check if the request has a valid NEPTUNE_INTERNAL_TOKEN Bearer token.
  * Used as a bypass for internal API-to-API calls (e.g., V2 → Chat).
  */
+/**
+ * Valid token names accepted for Bearer bypass, in priority order.
+ * E2E: NEPTUNE_INTERNAL_TOKEN (Chat primary), NEPTUNE_TEST_TOKEN (V2 primary),
+ *      NEPTUNE_E2E_TEST_TOKEN (CI/E2E shared).
+ */
 function hasValidInternalToken(request: Request | any): boolean {
   try {
     const authHeader = request?.headers?.get?.("authorization") ?? "";
     const token = authHeader.replace(/^Bearer\s+/i, "").trim();
-    const expected = process.env.NEPTUNE_INTERNAL_TOKEN;
-    return !!(token && expected && token === expected);
+    if (!token) return false;
+
+    // Accept any of the 3 Neptune internal token env vars
+    const candidates = [
+      process.env.NEPTUNE_INTERNAL_TOKEN,
+      process.env.NEPTUNE_TEST_TOKEN,
+      process.env.NEPTUNE_E2E_TEST_TOKEN,
+    ];
+    return candidates.some((expected) => !!(expected && token === expected));
   } catch {
     return false;
   }
