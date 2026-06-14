@@ -6,6 +6,22 @@ scope: domain
 auto_load: false
 headline: VPS management, pm2, nginx, Cloudflare and system health operations
 priority: P1
+scope_connectors:
+  - slack-connector
+  - wiki-connector
+triggers:
+  - VPS
+  - server
+  - pm2
+  - nginx
+  - Cloudflare
+  - deployment
+  - health check
+  - monitoring
+  - Hostinger
+  - DNS
+workflows: []
+description: "VPS ops SOP — server management, pm2 process control, nginx config, Cloudflare DNS, and system health monitoring. Routes to Slack and Wiki connectors."
 intent_tags:
   - VPS
   - pm2

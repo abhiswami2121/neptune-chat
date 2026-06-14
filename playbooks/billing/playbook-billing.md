@@ -1,3 +1,30 @@
+---
+playbook: billing
+version: "1.0.0"
+domain: billing-flow
+scope: domain
+scope_connectors:
+  - nmi-connector
+  - hyperswitch-connector
+  - forth-connector
+  - base44-connector
+  - slack-connector
+triggers:
+  - refund
+  - decline
+  - charge
+  - payment
+  - billing
+  - invoice
+  - retry payment
+  - reverse charge
+workflows:
+  - recovery-campaign
+  - lifecycle-automation
+  - billing-event-logger
+description: "Billing operations SOP — refunds, declines, charges, payment recovery, and NMI vault management. Routes to NMI, Hyperswitch, Forth, and Base44 connectors."
+---
+
 # Billing Domain Playbook
 
 

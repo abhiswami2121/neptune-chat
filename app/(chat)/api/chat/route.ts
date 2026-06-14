@@ -19,7 +19,8 @@ import {
   DEFAULT_CHAT_MODEL,
   getCapabilities,
 } from "@/lib/ai/models";
-import { type RequestHints, systemPrompt } from "@/lib/ai/prompts";
+import { type RequestHints, isProgressiveDisclosureEnabled, systemPrompt } from "@/lib/ai/prompts";
+import { progressiveTools } from "@/lib/ai/tools/progressive-disclosure";
 import { getLanguageModel } from "@/lib/ai/providers";
 import { createDocument } from "@/lib/ai/tools/create-document";
 import { editDocument } from "@/lib/ai/tools/edit-document";
@@ -229,38 +230,65 @@ export async function POST(request: Request) {
           } as any);
         }
 
-        const baseSystem = systemPrompt({ requestHints, supportsTools });
-        const systemWithContext = actionGroupCtx
-          ? `${baseSystem}\n\n${actionGroupCtx}`
-          : baseSystem;
+        // Phase 12.C: Progressive Disclosure mode — minimal context + 3 loader tools
+        const progressiveEnabled = isProgressiveDisclosureEnabled();
+
+        const baseSystem = systemPrompt({
+          requestHints,
+          supportsTools,
+          progressive: progressiveEnabled,
+        });
+        const systemWithContext = progressiveEnabled
+          ? baseSystem // Progressive mode: no connector catalog or action group context
+          : actionGroupCtx
+            ? `${baseSystem}\n\n${actionGroupCtx}`
+            : baseSystem;
+
+        // Tool configuration: progressive mode = only 3 loaders; normal mode = full suite
+        const progressiveToolNames = ["load_playbook", "load_connector", "load_function"];
+        const normalToolNames = isReasoningModel && !supportsTools
+          ? []
+          : [
+              "getWeather",
+              "createDocument",
+              "editDocument",
+              "updateDocument",
+              "requestSuggestions",
+              "viewFile",
+              "executeSkill",
+              "listPlaybooks",
+              "loadSkill",
+              "selfCode",
+              "spawnCodingAgent",
+              ...mcpToolNames,
+            ];
+
+        const activeToolNames = progressiveEnabled
+          ? progressiveToolNames
+          : normalToolNames;
+
+        const normalTools = {
+          getWeather,
+          createDocument: createDocument({ session, dataStream, modelId: chatModel }),
+          editDocument: editDocument({ dataStream, session }),
+          updateDocument: updateDocument({ session, dataStream, modelId: chatModel }),
+          requestSuggestions: requestSuggestions({ session, dataStream, modelId: chatModel }),
+          ...getAvailableTools(),
+          ...sandboxTools,
+          ...mcpTools,
+        };
+
+        const progressiveOnlyTools = {
+          ...progressiveTools,
+        };
+
         const result = streamText({
           model: getLanguageModel(chatModel),
           system: systemWithContext,
           messages: modelMessages,
           stopWhen: stepCountIs(20),
-          // TypeScript can't infer dynamic tool names from getAvailableTools()/getMCPTools()
-          // at compile time — the actual tools are fine at runtime.
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          experimental_activeTools:
-            isReasoningModel && !supportsTools
-              ? ([] as any)
-              : ([
-                  // Standard assistant tools (artifact system)
-                  "getWeather",
-                  "createDocument",
-                  "editDocument",
-                  "updateDocument",
-                  "requestSuggestions",
-                  // U2.1.C Gatekeeper Tools (6 tools, progressive disclosure)
-                  "viewFile",
-                  "executeSkill",
-                  "listPlaybooks",
-                  "loadSkill",
-                  "selfCode",
-                  "spawnCodingAgent",
-                  // MCP tools (dynamic)
-                  ...mcpToolNames,
-                ] as any),
+          experimental_activeTools: activeToolNames as any,
           providerOptions: {
             ...(modelConfig?.gatewayOrder && {
               gateway: { order: modelConfig.gatewayOrder },
@@ -269,31 +297,9 @@ export async function POST(request: Request) {
               openai: { reasoningEffort: modelConfig.reasoningEffort },
             }),
           },
-          tools: {
-            getWeather,
-            createDocument: createDocument({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-            editDocument: editDocument({ dataStream, session }),
-            updateDocument: updateDocument({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-            requestSuggestions: requestSuggestions({
-              session,
-              dataStream,
-              modelId: chatModel,
-            }),
-            // --- Inline tools (PRD Section 3, Layer 2) ---
-            ...getAvailableTools(),
-            // --- Sandbox tools (PRD Section 3, Layer 2b) ---
-            ...sandboxTools,
-            // --- MCP tools (PRD Section 3, Layer 3) ---
-            ...mcpTools,
-          },
+          tools: progressiveEnabled
+            ? progressiveOnlyTools
+            : normalTools,
           experimental_telemetry: {
             isEnabled: isProductionEnvironment,
             functionId: "stream-text",

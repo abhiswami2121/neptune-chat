@@ -6,6 +6,22 @@ scope: domain
 auto_load: false
 headline: Campaigns, lead nurture, content strategy and marketing operations
 priority: P2
+scope_connectors:
+  - ghl-connector
+  - affy-connector
+  - slack-connector
+triggers:
+  - campaign
+  - lead
+  - email blast
+  - nurture
+  - content
+  - social media
+  - marketing
+  - promotion
+workflows:
+  - campaign-orchestrator
+description: "Marketing ops SOP — campaign orchestration, lead nurture sequences, email/SMS blasts via GHL, and content strategy. Routes to GHL, Affy, and Slack connectors."
 intent_tags:
   - marketing
   - campaign

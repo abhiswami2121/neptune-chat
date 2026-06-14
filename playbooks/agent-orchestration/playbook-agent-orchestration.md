@@ -6,6 +6,23 @@ scope: domain
 auto_load: true
 headline: Agent routing, dispatch, multi-agent coordination and task delegation playbook
 priority: P1
+scope_connectors:
+  - slack-connector
+  - base44-connector
+  - neptune-connector
+triggers:
+  - orchestrate
+  - dispatch
+  - multi-agent
+  - delegate
+  - workflow
+  - automate
+  - agent task
+  - coordination
+workflows:
+  - sequence-control-workflow
+  - gts-chat-loop-workflow
+description: "Agent orchestration SOP — multi-agent dispatch, task delegation, workflow coordination, and agent routing. Routes to Slack, Base44, and Neptune connectors."
 intent_tags:
   - orchestrate
   - dispatch

@@ -6,6 +6,22 @@ scope: domain
 auto_load: true
 headline: Vercel deployment standards, security patterns and framework discipline
 priority: P1
+scope_connectors:
+  - vercel-connector
+  - github-connector
+  - slack-connector
+triggers:
+  - vercel
+  - deploy
+  - deployment
+  - ship
+  - production
+  - preview
+  - build log
+  - domain
+workflows:
+  - gts-chat-loop-workflow
+description: "Vercel deployment SOP — deploy standards, security patterns, preview environments, and production shipping. Routes to Vercel, GitHub, and Slack connectors."
 intent_tags:
   - vercel
   - deploy

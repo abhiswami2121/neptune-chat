@@ -1,3 +1,27 @@
+---
+playbook: disputes
+version: "1.0.0"
+domain: credit-disputes
+scope: domain
+scope_connectors:
+  - forth-connector
+  - base44-connector
+  - slack-connector
+  - ghl-connector
+triggers:
+  - dispute
+  - credit report
+  - negative item
+  - credit repair
+  - FCRA
+  - debt validation
+  - credit restoration
+workflows:
+  - dispute-orchestrator
+  - credit-restoration-engine
+description: "Credit disputes SOP — debt validation, FCRA compliance, credit report parsing, and dispute orchestration. Routes to Forth, Base44, and Slack connectors."
+---
+
 # Disputes Domain Playbook
 
 

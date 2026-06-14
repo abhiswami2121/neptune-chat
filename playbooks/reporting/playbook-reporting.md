@@ -6,6 +6,22 @@ scope: domain
 auto_load: false
 headline: Operational dashboards, morning pulse, analytics and data queries
 priority: P1
+scope_connectors:
+  - base44-connector
+  - slack-connector
+  - wiki-connector
+triggers:
+  - report
+  - dashboard
+  - snapshot
+  - morning pulse
+  - analytics
+  - metrics
+  - KPI
+  - overview
+workflows:
+  - hourly-intelligence-sweep
+description: "Reporting SOP — operational dashboards, morning pulse, analytics queries, and data snapshots. Routes to Base44 (reportingHubQuery), Slack, and Wiki connectors."
 intent_tags:
   - reporting
   - dashboard

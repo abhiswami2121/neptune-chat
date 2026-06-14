@@ -1,3 +1,29 @@
+---
+playbook: customer-support
+version: "1.0.0"
+domain: support-triage
+scope: domain
+scope_connectors:
+  - slack-connector
+  - vapi-connector
+  - ghl-connector
+  - base44-connector
+  - linear-connector
+triggers:
+  - ticket
+  - support
+  - customer issue
+  - help
+  - escalate
+  - stale ticket
+  - customer complaint
+  - call log
+workflows:
+  - enrollment-stage-engine
+  - lifecycle-automation
+description: "Customer support SOP — ticket triage, escalation, customer 360 lookup, Vapi call analysis, and Slack comms. Routes to Slack, Vapi, GHL, Base44, and Linear connectors."
+---
+
 # Customer Support Domain Playbook
 
 

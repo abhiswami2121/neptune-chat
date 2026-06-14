@@ -6,6 +6,26 @@ scope: domain
 auto_load: false
 headline: Software engineering standards, code review, architecture decisions and PRD authoring
 priority: P1
+scope_connectors:
+  - github-connector
+  - vercel-connector
+  - linear-connector
+  - mcp-hub-connector
+  - neptune-connector
+triggers:
+  - code review
+  - PR
+  - deploy
+  - build
+  - bug fix
+  - feature
+  - architecture
+  - refactor
+  - merge
+workflows:
+  - code-refactor
+  - research-swarm
+description: "Engineering SOP — code reviews, PR management, deployment pipeline, architecture decisions, and sandbox coding. Routes to GitHub, Vercel, Linear, MCP Hub, and Neptune connectors."
 intent_tags:
   - code review
   - architecture

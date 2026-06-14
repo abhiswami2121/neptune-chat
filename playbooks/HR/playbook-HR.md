@@ -6,6 +6,19 @@ scope: domain
 auto_load: false
 headline: Team management, onboarding, compliance and personnel operations
 priority: P2
+scope_connectors:
+  - slack-connector
+  - base44-connector
+triggers:
+  - HR
+  - onboarding
+  - offboarding
+  - employee
+  - team
+  - personnel
+  - compliance training
+workflows: []
+description: "HR ops SOP — team management, employee onboarding/offboarding, compliance tracking. Routes to Slack and Base44 connectors."
 intent_tags:
   - HR
   - team

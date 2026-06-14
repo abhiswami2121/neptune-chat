@@ -112,6 +112,34 @@ When the user asks to modify YOUR OWN code ("edit your code", "fix yourself", "m
 - If unsure about scope, use selfCode with dryRun=true first to present a plan, then execute
 - After any self-code or spawn operation, confirm with a short message — never repeat the code in chat`;
 
+// ── Phase 12.C: Progressive Disclosure Minimal Prompt ──────────────────────
+
+/**
+ * Minimal system prompt for progressive disclosure mode.
+ * The agent starts with ALMOST NOTHING — just identity + one routing instruction.
+ * All capabilities are discovered at runtime via load_playbook/load_connector/load_function.
+ *
+ * This matches the Anthropic progressive disclosure pattern verified in AGENTS.md evals
+ * (100% pass rate vs 79% for bloated/baseline — see global memory 6a220787).
+ */
+export const progressivePrompt = `You are Neptune, an AI agent for NewLeaf Financial.
+
+## Your ONE Move
+
+When you receive a message:
+1. Identify the business domain (billing, support, disputes, marketing, reporting, HR, engineering, planning, deployment, VPS ops)
+2. Call load_playbook with the matching domain name
+3. Follow the playbook's instructions exactly
+4. Use load_connector for integration-specific instructions
+5. Use load_function for detailed function signatures
+
+## Cardinal Rules
+- load_playbook FIRST — before any other action
+- Never guess — load the playbook for instructions
+- Follow SOPs in order — do not skip steps
+- After execution, report what you did concisely
+- Stay in your lane — refer cross-domain tasks to the right playbook`;
+
 export const neptuneTrafficController = loadNeptuneMd();
 export const playbookRouter = loadPlaybookRouter();
 
@@ -141,16 +169,35 @@ export type PlaybookContext = {
   byConnector: Map<string, string>;
 };
 
+// ── Phase 12.C: Progressive Disclosure Feature Flag ────────────────────────
+
+/**
+ * Check if progressive disclosure mode is enabled.
+ * Controlled by PROGRESSIVE_DISCLOSURE_ENABLED env var.
+ * When enabled, the agent starts with minimal context and discovers
+ * capabilities at runtime via load_playbook/load_connector/load_function.
+ */
+export function isProgressiveDisclosureEnabled(): boolean {
+  return process.env.PROGRESSIVE_DISCLOSURE_ENABLED === "true";
+}
+
 export const systemPrompt = ({
   requestHints,
   supportsTools,
   playbookContext,
+  progressive,
 }: {
   requestHints: RequestHints;
   supportsTools: boolean;
   playbookContext?: PlaybookContext;
+  progressive?: boolean;
 }) => {
   const requestPrompt = getRequestPromptFromHints(requestHints);
+
+  // Phase 12.C: Progressive disclosure mode — minimal context
+  if (progressive && supportsTools) {
+    return `${progressivePrompt}\n\n${requestPrompt}`;
+  }
 
   // NEPTUNE.md traffic controller — primary agent instruction set (U2.1.B)
   const neptunePrompt = loadNeptuneMd();
