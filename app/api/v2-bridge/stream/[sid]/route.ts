@@ -16,9 +16,9 @@ const NEPTUNE_INTERNAL_TOKEN = secrets.vps.internalToken;
 
 export const GET = requireAllowlist(async (
   req: NextRequest,
-  { params }: { params: { sid: string } }
+  { params }: { params: Promise<{ sid: string }> }
 ) => {
-  const { sid } = params;
+  const { sid } = await params;
 
   if (!sid) {
     return NextResponse.json(
