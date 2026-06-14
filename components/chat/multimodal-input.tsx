@@ -7,6 +7,7 @@ import {
   ArrowUpIcon,
   BrainIcon,
   EyeIcon,
+  Hammer,
   LockIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -526,6 +527,12 @@ function PureMultimodalInput({
               onModelChange={onModelChange}
               selectedModelId={selectedModelId}
             />
+            <V2CodingButton
+              input={input}
+              setInput={setInput}
+              setLocalStorageInput={setLocalStorageInput}
+              status={status}
+            />
           </PromptInputTools>
 
           {status === "submitted" ? (
@@ -814,3 +821,65 @@ function PureStopButton({
 }
 
 const StopButton = memo(PureStopButton);
+
+function PureV2CodingButton({
+  input,
+  status,
+  setInput,
+  setLocalStorageInput,
+}: {
+  input: string;
+  status: UseChatHelpers<ChatMessage>["status"];
+  setInput: Dispatch<SetStateAction<string>>;
+  setLocalStorageInput: (val: string) => void;
+}) {
+  const handleV2Send = useCallback(async () => {
+    if (!input.trim()) return;
+    const task = input.trim();
+    setInput("");
+    setLocalStorageInput("");
+    try {
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_BASE_PATH ?? ""}/api/v2-bridge?path=agent-sessions`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ task, source: "chat-composer-v2-button" }),
+        },
+      );
+      if (res.ok) {
+        const data = await res.json();
+        toast.success(`Sent to V2 Coding — session ${data.id?.slice(0, 8) || "created"}`);
+      } else {
+        toast.error("V2 Coding unreachable. Try again.");
+      }
+    } catch (_e) {
+      toast.error("V2 Coding unreachable. Is the V2 server running?");
+    }
+  }, [input, setInput, setLocalStorageInput]);
+
+  const ready = status === "ready" && input.trim().length > 0;
+
+  return (
+    <Button
+      className={cn(
+        "h-7 rounded-lg px-2 gap-1 text-[12px] transition-all duration-200 border border-border/40",
+        ready
+          ? "text-amber-600 hover:text-amber-700 hover:border-amber-500/50 hover:bg-amber-50 dark:hover:bg-amber-950/30"
+          : "text-muted-foreground/30 cursor-not-allowed",
+      )}
+      disabled={!ready}
+      onClick={(event) => {
+        event.preventDefault();
+        handleV2Send();
+      }}
+      title="Send to V2 for long-running coding tasks"
+      variant="ghost"
+    >
+      <Hammer size={12} />
+      <span className="hidden sm:inline">V2 Code</span>
+    </Button>
+  );
+}
+
+const V2CodingButton = memo(PureV2CodingButton);
